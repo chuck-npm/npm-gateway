@@ -17,7 +17,8 @@ final class MySqlConnectionFactory
      *     database?: mixed,
      *     username?: mixed,
      *     password?: mixed,
-     *     ssl_ca?: mixed
+     *     ssl_ca?: mixed,
+     *     app_env?: mixed
      * } $config
      */
     public static function connect(array $config): mysqli
@@ -32,12 +33,12 @@ final class MySqlConnectionFactory
         }
 
         $caFile = $validated['ssl_ca'];
-        $clientFlags = MYSQLI_CLIENT_SSL;
-        if ($caFile !== '') {
+        $clientFlags = 0;
+        if ($validated['verify_server_certificate']) {
             // mysqlnd can return false for this option even though certificate
             // verification is selected by the matching real_connect flag.
             $connection->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, true);
-            $clientFlags |= MYSQLI_CLIENT_SSL_VERIFY_SERVER_CERT;
+            $clientFlags = MYSQLI_CLIENT_SSL | MYSQLI_CLIENT_SSL_VERIFY_SERVER_CERT;
 
             if (!$connection->ssl_set(null, null, $caFile, null, null)) {
                 throw new RuntimeException('Unable to configure the MySQL TLS CA file.');
@@ -59,7 +60,7 @@ final class MySqlConnectionFactory
         $tlsStatus = $result->fetch_assoc();
         $result->free();
 
-        if (!is_array($tlsStatus) || ($tlsStatus['Value'] ?? '') === '') {
+        if ($validated['tls_required'] && (!is_array($tlsStatus) || ($tlsStatus['Value'] ?? '') === '')) {
             $connection->close();
             throw new RuntimeException('MySQL did not negotiate a TLS cipher.');
         }
@@ -75,7 +76,10 @@ final class MySqlConnectionFactory
      *     database: string,
      *     username: string,
      *     password: string,
-     *     ssl_ca: string
+     *     ssl_ca: string,
+     *     app_env: string,
+     *     tls_required: bool,
+     *     verify_server_certificate: bool
      * }
      */
     public static function validate(array $config): array
@@ -99,6 +103,21 @@ final class MySqlConnectionFactory
         if (!is_string($sslCa)) {
             throw new InvalidArgumentException('Database configuration "ssl_ca" must be a string.');
         }
+
+        $appEnv = $config['app_env'] ?? 'production';
+        if (!is_string($appEnv) || $appEnv === '') {
+            throw new InvalidArgumentException('Database configuration "app_env" must be a non-empty string.');
+        }
+
+        $loopback = in_array(strtolower($config['host']), ['127.0.0.1', 'localhost', '::1'], true);
+        $localEnvironment = in_array(strtolower($appEnv), ['local', 'testing'], true);
+        $tlsRequired = !$loopback || !$localEnvironment || $sslCa !== '';
+
+        if ($tlsRequired && $sslCa === '') {
+            throw new RuntimeException(
+                'A readable MySQL TLS CA file is required unless APP_ENV is local or testing and the host is loopback.'
+            );
+        }
         if ($sslCa !== '' && (!is_file($sslCa) || !is_readable($sslCa))) {
             throw new RuntimeException('The configured MySQL TLS CA file is missing or unreadable.');
         }
@@ -110,6 +129,9 @@ final class MySqlConnectionFactory
             'username' => $config['username'],
             'password' => $config['password'],
             'ssl_ca' => $sslCa,
+            'app_env' => $appEnv,
+            'tls_required' => $tlsRequired,
+            'verify_server_certificate' => $tlsRequired,
         ];
     }
 }

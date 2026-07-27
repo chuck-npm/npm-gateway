@@ -16,26 +16,68 @@ The intended production platform is IIS on Windows Server 2022.
 ## Local setup
 
 1. Run `composer install` in the project root.
-2. Copy `.env.example` to `.env` manually and provide the application and
-   migration database profiles for the managed MySQL service.
+2. Copy `.env.example` to `.env` manually and provide both local database
+   profiles.
 3. Configure Apache so that this project's `public/` directory is the document
    root. No other project directory should be web-accessible.
 4. Open the configured local URL in a browser.
 
-Database settings have no localhost, port, schema, credential, or certificate
-defaults. Application connections use the `DB_*` variables and migrations use
-the separately privileged `MIGRATION_DB_*` variables. MySQLi connections always
-request TLS; when an SSL CA path is configured, the CA must be readable and
-server-certificate verification is enabled.
+Application connections use the `DB_*` variables and migrations use the
+separately privileged `MIGRATION_DB_*` variables. No Laravel-style aliases such
+as `DB_DATABASE` or `DB_USERNAME` are used.
+
+### Local MySQL configuration
+
+With `APP_ENV=local` or `APP_ENV=testing`, `DB_SSL_CA` and
+`MIGRATION_DB_SSL_CA` may be empty only when the corresponding host is exactly
+`127.0.0.1`, `localhost`, or `::1`. Those connections may run without TLS.
+For example:
+
+```dotenv
+APP_ENV=local
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=npm_gateway
+DB_USER=npm_gateway_app
+DB_PASSWORD=
+DB_SSL_CA=
+MIGRATION_DB_HOST=127.0.0.1
+MIGRATION_DB_PORT=3306
+MIGRATION_DB_NAME=npm_gateway
+MIGRATION_DB_USER=npm_gateway_migration
+MIGRATION_DB_PASSWORD=
+MIGRATION_DB_SSL_CA=
+```
+
+### Managed MySQL configuration
+
+Every remote connection, and every connection outside `local` or `testing`,
+requires a nonempty path to a readable CA file. This includes loopback hosts in
+production. The client requests TLS, enables server-certificate verification,
+and rejects the connection if no TLS cipher is negotiated.
+
+```dotenv
+APP_ENV=production
+DB_HOST=managed-mysql.example.com
+DB_PORT=16751
+DB_NAME=npm_gateway
+DB_USER=npm_gateway_app
+DB_PASSWORD=
+DB_SSL_CA=C:\certificates\managed-mysql-ca.pem
+MIGRATION_DB_HOST=managed-mysql.example.com
+MIGRATION_DB_PORT=16751
+MIGRATION_DB_NAME=npm_gateway
+MIGRATION_DB_USER=npm_gateway_migration
+MIGRATION_DB_PASSWORD=
+MIGRATION_DB_SSL_CA=C:\certificates\managed-mysql-ca.pem
+```
 
 ## Current phase
 
-This repository contains only the initial project skeleton, Composer
-autoloading, safe configuration placeholders, a minimal bootstrap, placeholder
-views, and a temporary front controller response. Authentication,
-authorization, portal modules, and business schemas have not been implemented.
-The migration infrastructure and its history table are implemented, but no
-business schema or versioned migrations exist yet.
+The Core Platform Foundation migration creates `properties`, `employees`,
+`users`, `employee_property_assignments`, and `audit_logs`. It creates no seed
+users, employees, properties, assignments, or audit events. Authentication
+workflows, authorization, and portal modules remain separate phases.
 
 ## Presentation foundation
 
@@ -72,7 +114,7 @@ composer test
 composer syntax-check
 ```
 
-Check either managed database profile without exposing credentials:
+Check either local or managed database profile without exposing credentials:
 
 ```shell
 php bin/gateway database:check application
@@ -90,17 +132,20 @@ Connection: successful
 Selected database: gateway
 MySQL server version: 8.x.x
 Connection character set: utf8mb4
-TLS active: yes
-TLS cipher: TLS_AES_256_GCM_SHA384
+TLS active: no (permitted local loopback)
+TLS cipher: none
 Database default character set: utf8mb4
 Database default collation: utf8mb4_0900_ai_ci
 Privilege check: CRUD present; schema changes absent
 ```
 
-The application check requires `SELECT`, `INSERT`, `UPDATE`, and `DELETE` while
-rejecting schema-changing grants. The migration check requires `CREATE`,
-`ALTER`, and `DROP`. Live PHPUnit coverage is in the Integration suite and is
-skipped unless `RUN_DB_INTEGRATION_TESTS=true`.
+For managed connections the TLS fields instead report `yes` and the negotiated
+cipher. An inactive cipher is accepted only for the local/testing loopback
+policy above. Selected database, connection and schema encoding, and privilege
+checks always remain mandatory. The application check requires `SELECT`,
+`INSERT`, `UPDATE`, and `DELETE` while rejecting schema-changing grants. The
+migration check requires `CREATE`, `ALTER`, and `DROP`. Live PHPUnit coverage is
+in the Integration suite and is skipped unless `RUN_DB_INTEGRATION_TESTS=true`.
 
 ## Database migrations
 
@@ -155,6 +200,18 @@ php bin/gateway migrate:rollback
 php bin/gateway schema:verify
 ```
 
+Apply Foundation with `php bin/gateway migrate`, inspect it with
+`php bin/gateway migrate:status`, and validate it with
+`php bin/gateway schema:verify`.
+
+`migrate:rollback` is destructive and reverses the latest batch. Local
+development is the approved location for destructive migration testing.
+Production migrations must be tested locally—including rollback and
+reapply—before production use. Foundation creates no administrator, sample
+property, or other seed data. See the
+[`data dictionary`](docs/data-dictionary.md) for the authoritative schema and
+business rules.
+
 MySQL DDL may implicitly commit, so the runner does not pretend a batch is fully
 transactional. Rollback depends on every migration providing a correct
 `down()` implementation. Migration files must be committed to Git with the code
@@ -162,5 +219,4 @@ that depends on them.
 
 Do not make routine schema changes manually in MySQL Workbench. Manual database
 work is limited to initial database creation, database-user and privilege
-administration, and emergency inspection or repair. No business tables have
-been created at this phase.
+administration, and emergency inspection or repair.

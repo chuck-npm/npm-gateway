@@ -41,9 +41,8 @@ final class SchemaVerifier
         if (
             !is_array($schema)
             || strcasecmp((string) $schema['DEFAULT_CHARACTER_SET_NAME'], 'utf8mb4') !== 0
-            || strcasecmp((string) $schema['DEFAULT_COLLATION_NAME'], 'utf8mb4_0900_ai_ci') !== 0
         ) {
-            throw new MigrationException('The database character set or collation is invalid.');
+            throw new MigrationException('The database character set is invalid.');
         }
 
         self::validateTableDefinition($this->repository->tableDefinition($this->expectedDatabase));
@@ -69,12 +68,139 @@ final class SchemaVerifier
                 'Orphaned migration records: ' . implode(', ', $orphaned)
             );
         }
+        $executed = array_fill_keys(
+            array_map(static fn (MigrationRecord $record): string => $record->migration, $records),
+            true
+        );
+        if (isset($executed[FoundationSchema::MIGRATION])) {
+            $this->verifyFoundationSchema();
+        }
 
         return [
             'Schema verification passed.',
             sprintf('Executed migrations: %d', count($records)),
             sprintf('Pending migrations: %d', $pending),
         ];
+    }
+
+    private function verifyFoundationSchema(): void
+    {
+        foreach (FoundationSchema::expectations() as $table => $expected) {
+            $metadata = $this->tableMetadata($table);
+            if (strcasecmp($metadata['engine'], 'InnoDB') !== 0) {
+                throw new MigrationException("{$table} must use InnoDB.");
+            }
+            if (strcasecmp($metadata['collation'], 'utf8mb4_0900_ai_ci') !== 0) {
+                throw new MigrationException("{$table} has an invalid collation.");
+            }
+            foreach ($expected['indexes'] as $index) {
+                if (!isset($metadata['indexes'][$index])) {
+                    throw new MigrationException("Missing index {$index} on {$table}.");
+                }
+            }
+            foreach ($expected['foreign_keys'] as $foreignKey) {
+                if (!isset($metadata['foreign_keys'][$foreignKey])) {
+                    throw new MigrationException("Missing foreign key {$foreignKey} on {$table}.");
+                }
+                if ($metadata['foreign_keys'][$foreignKey] === 'CASCADE') {
+                    throw new MigrationException("Unexpected ON DELETE CASCADE on {$foreignKey}.");
+                }
+            }
+            foreach ($expected['checks'] as $check) {
+                if (!isset($metadata['checks'][$check])) {
+                    throw new MigrationException("Missing check constraint {$check} on {$table}.");
+                }
+            }
+        }
+
+        $auditColumns = $this->tableMetadata('audit_logs')['columns'];
+        foreach (['updated_at', 'created_by', 'updated_by'] as $forbidden) {
+            if (isset($auditColumns[$forbidden])) {
+                throw new MigrationException("audit_logs must not contain {$forbidden}.");
+            }
+        }
+    }
+
+    /**
+     * @return array{
+     *   engine: string,
+     *   collation: string,
+     *   columns: array<string, true>,
+     *   indexes: array<string, true>,
+     *   foreign_keys: array<string, string>,
+     *   checks: array<string, true>
+     * }
+     */
+    private function tableMetadata(string $table): array
+    {
+        $statement = $this->connection->prepare(
+            'SELECT ENGINE, TABLE_COLLATION FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?'
+        );
+        $database = $this->expectedDatabase;
+        $statement->bind_param('ss', $database, $table);
+        $statement->execute();
+        $row = $statement->get_result()->fetch_assoc();
+        $statement->close();
+        if (!is_array($row)) {
+            throw new MigrationException("Missing Foundation table: {$table}.");
+        }
+
+        $columns = $this->namedSet(
+            'SELECT COLUMN_NAME AS item_name FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+            $table
+        );
+        $indexes = $this->namedSet(
+            'SELECT DISTINCT INDEX_NAME AS item_name FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?',
+            $table
+        );
+        $checks = $this->namedSet(
+            "SELECT CONSTRAINT_NAME AS item_name FROM information_schema.TABLE_CONSTRAINTS
+             WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND CONSTRAINT_TYPE = 'CHECK'",
+            $table
+        );
+
+        $statement = $this->connection->prepare(
+            'SELECT CONSTRAINT_NAME, DELETE_RULE
+             FROM information_schema.REFERENTIAL_CONSTRAINTS
+             WHERE CONSTRAINT_SCHEMA = ? AND TABLE_NAME = ?'
+        );
+        $statement->bind_param('ss', $database, $table);
+        $statement->execute();
+        $result = $statement->get_result();
+        $foreignKeys = [];
+        while ($foreignKey = $result->fetch_assoc()) {
+            $foreignKeys[(string) $foreignKey['CONSTRAINT_NAME']] = strtoupper((string) $foreignKey['DELETE_RULE']);
+        }
+        $statement->close();
+
+        return [
+            'engine' => (string) $row['ENGINE'],
+            'collation' => (string) $row['TABLE_COLLATION'],
+            'columns' => $columns,
+            'indexes' => $indexes,
+            'foreign_keys' => $foreignKeys,
+            'checks' => $checks,
+        ];
+    }
+
+    /** @return array<string, true> */
+    private function namedSet(string $sql, string $table): array
+    {
+        $statement = $this->connection->prepare($sql);
+        $database = $this->expectedDatabase;
+        $statement->bind_param('ss', $database, $table);
+        $statement->execute();
+        $result = $statement->get_result();
+        $items = [];
+        while ($row = $result->fetch_assoc()) {
+            $items[(string) $row['item_name']] = true;
+        }
+        $statement->close();
+
+        return $items;
     }
 
     /**

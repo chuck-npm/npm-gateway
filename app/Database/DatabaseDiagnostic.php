@@ -33,7 +33,7 @@ final class DatabaseDiagnostic
 
             $connectionCharset = $connection->character_set_name();
             $tlsCipher = self::statusValue($connection, 'Ssl_cipher');
-            if ($tlsCipher === '') {
+            if ($expected['tls_required'] && $tlsCipher === '') {
                 throw new DatabaseDiagnosticException(
                     'TLS is not active or no TLS cipher was negotiated.',
                     self::baseReport($profile, $connection, $database)
@@ -44,8 +44,8 @@ final class DatabaseDiagnostic
             $report = [
                 ...self::baseReport($profile, $connection, $database),
                 'connection_charset' => $connectionCharset,
-                'tls_active' => 'yes',
-                'tls_cipher' => $tlsCipher,
+                'tls_active' => $tlsCipher !== '' ? 'yes' : 'no (permitted local loopback)',
+                'tls_cipher' => $tlsCipher !== '' ? $tlsCipher : 'none',
                 'database_charset' => $databaseCharset,
                 'database_collation' => $databaseCollation,
             ];

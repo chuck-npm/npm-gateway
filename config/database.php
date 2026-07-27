@@ -15,4 +15,5 @@ return [
     'username' => $env('DB_USER'),
     'password' => $env('DB_PASSWORD'),
     'ssl_ca' => $env('DB_SSL_CA'),
+    'app_env' => $env('APP_ENV'),
 ];

@@ -15,4 +15,5 @@ return [
     'username' => $env('MIGRATION_DB_USER'),
     'password' => $env('MIGRATION_DB_PASSWORD'),
     'ssl_ca' => $env('MIGRATION_DB_SSL_CA'),
+    'app_env' => $env('APP_ENV'),
 ];

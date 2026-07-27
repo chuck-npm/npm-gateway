@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 final class DatabaseDiagnosticIntegrationTest extends TestCase
 {
     #[DataProvider('profiles')]
-    public function testConfiguredManagedDatabaseProfile(string $profile): void
+    public function testConfiguredDatabaseProfile(string $profile): void
     {
         if (getenv('RUN_DB_INTEGRATION_TESTS') !== 'true') {
             self::markTestSkipped('Set RUN_DB_INTEGRATION_TESTS=true to run live database tests.');
@@ -21,7 +21,7 @@ final class DatabaseDiagnosticIntegrationTest extends TestCase
         $report = DatabaseDiagnostic::inspect($profile, $config);
 
         self::assertSame('successful', $report['connection']);
-        self::assertSame('yes', $report['tls_active']);
+        self::assertContains($report['tls_active'], ['yes', 'no (permitted local loopback)']);
     }
 
     /**
