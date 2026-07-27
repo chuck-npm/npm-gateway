@@ -1,0 +1,77 @@
+<?php
+
+declare(strict_types=1);
+
+use NpmGateway\Console\DatabaseCheckCommand;
+use NpmGateway\Console\MigrationCommand;
+use NpmGateway\Database\DatabaseDiagnostic;
+use NpmGateway\Database\DatabaseProfiles;
+
+$projectRoot = dirname(__DIR__);
+
+$application = require $projectRoot . DIRECTORY_SEPARATOR . 'bootstrap' . DIRECTORY_SEPARATOR . 'app.php';
+$arguments = array_slice($argv, 1);
+$command = $arguments[0] ?? '';
+$help = implode(PHP_EOL, [
+    'NPM Gateway CLI',
+    '',
+    'Commands:',
+    '  database:check <application|migration>',
+    '  migrate',
+    '  migrate:status',
+    '  migrate:rollback',
+    '  schema:verify',
+]) . PHP_EOL;
+
+if ($command === '' || in_array($command, ['help', '--help', '-h'], true)) {
+    fwrite(STDOUT, $help);
+    exit(0);
+}
+
+if ($command === 'database:check') {
+    $profile = $arguments[1] ?? '';
+    $config = in_array($profile, DatabaseProfiles::names(), true)
+        ? DatabaseProfiles::load($profile, $application['root'])
+        : [];
+    $result = DatabaseCheckCommand::run(
+        $arguments,
+        static fn (string $selectedProfile): array => DatabaseDiagnostic::inspect(
+            $selectedProfile,
+            $config
+        ),
+        [is_string($config['password'] ?? null) ? $config['password'] : '']
+    );
+    fwrite(STDOUT, $result['stdout']);
+    fwrite(STDERR, $result['stderr']);
+    exit($result['exit_code']);
+}
+
+if (!in_array($command, ['migrate', 'migrate:status', 'migrate:rollback', 'schema:verify'], true)) {
+    fwrite(STDERR, "Unknown command: {$command}\n\n{$help}");
+    exit(2);
+}
+if (count($arguments) !== 1) {
+    fwrite(STDERR, "This command does not accept arguments.\n");
+    exit(2);
+}
+
+$config = DatabaseProfiles::load('migration', $application['root']);
+try {
+    $lines = MigrationCommand::execute(
+        $command,
+        $config,
+        $application['root'] . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations'
+    );
+    fwrite(STDOUT, implode(PHP_EOL, $lines) . PHP_EOL);
+    exit(0);
+} catch (Throwable $exception) {
+    $message = str_replace(["\r", "\n"], ' ', $exception->getMessage());
+    foreach (['password', 'host', 'ssl_ca'] as $key) {
+        $secret = is_string($config[$key] ?? null) ? $config[$key] : '';
+        if ($secret !== '') {
+            $message = str_replace($secret, '[redacted]', $message);
+        }
+    }
+    fwrite(STDERR, "Command failed: {$message}\n");
+    exit(1);
+}

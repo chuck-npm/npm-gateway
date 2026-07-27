@@ -1,0 +1,30 @@
+{
+    "name": "npm-properties/npm-gateway",
+    "description": "Internal NPM Properties company portal.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.2",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "NpmGateway\\": "app/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "migrate": "php bin/gateway migrate",
+        "migration-status": "php bin/gateway migrate:status",
+        "migration-rollback": "php bin/gateway migrate:rollback",
+        "schema-verify": "php bin/gateway schema:verify",
+        "dump-autoload": "composer dump-autoload",
+        "syntax-check": "php -l bootstrap/app.php && php -l bin/gateway && php -l public/index.php && php -l config/app.php && php -l config/database.php && php -l config/migration-database.php && php -l app/Console/DatabaseCheckCommand.php && php -l app/Console/MigrationCommand.php && php -l app/Database/DatabaseDiagnostic.php && php -l app/Database/DatabaseDiagnosticException.php && php -l app/Database/DatabasePrivilegePolicy.php && php -l app/Database/DatabaseProfiles.php && php -l app/Database/MySqlConnectionFactory.php && php -l app/Database/Migration/MigrationInterface.php && php -l app/Database/Migration/MigrationDiscovery.php && php -l app/Database/Migration/MigrationRepository.php && php -l app/Database/Migration/MigrationRunner.php && php -l app/Database/Migration/MigrationStatus.php && php -l app/Database/Migration/MigrationRecord.php && php -l app/Database/Migration/MigrationException.php && php -l app/Database/Migration/SchemaVerifier.php && php -l config/security.php && php -l config/session.php && php -l config/access.php && php -l config/corporate-access.php && php -l config/community-access.php && php -l routes/web.php && php -l routes/api.php"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
