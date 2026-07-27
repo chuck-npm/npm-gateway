@@ -17,3 +17,15 @@
 15. Every service is browser-independent and testable without a browser (Gateway Rule 020).
 
 The dependency direction is presentation/client → application service → repository → database. The composition root injects dependencies; business services do not retrieve the container.
+
+Authenticated identity comes only from a validated Gateway database session,
+never UI state or a native-session user ID. Clients never infer authorization
+from visible controls. Raw passwords and session identifiers are never
+persisted. Browser, future API, external, and AI clients cross the same
+authentication boundary, and security outcomes remain explainable through
+immutable attempt and audit history.
+
+Native PHP sessions and Gateway authentication sessions are distinct. Native
+sessions hold CSRF, flash, and temporary UI state under their own cookie;
+Gateway's opaque authentication cookie is validated through `SessionService`
+and `user_sessions`. A Gateway token is never used as a PHP session ID.

@@ -258,6 +258,41 @@ php bin/gateway migrate:status
 php bin/gateway schema:verify
 ```
 
+## Browser authentication
+
+Gateway provides `GET/POST /login`, protected `GET /dashboard`, and POST-only
+`/logout`. Authentication failures always use the same neutral message. There
+is no Remember Me, self-service password reset, account creation, MFA, or token
+API in this phase.
+
+Five consecutive known-user password failures lock the account for 15 minutes.
+IP throttling defaults to ten failures in ten minutes and applies to known and
+unknown usernames using a keyed IP hash. Successful login clears account
+failure and lock state.
+
+The browser receives a 32-byte URL-safe opaque token in the dedicated
+`SESSION_COOKIE_NAME` cookie. Gateway stores only its
+domain-separated HMAC-SHA-256 hash. Sessions have a 60-minute idle limit,
+eight-hour absolute limit, five-minute activity-write threshold, and conditional
+token rotation after 15 minutes. Cookies are HttpOnly, SameSite=Lax, path `/`,
+non-persistent, and Secure in production.
+
+Configure `APP_KEY` with at least 32 characters and the `SESSION_*` and
+`AUTH_*` settings in `.env.example`. Production fails closed unless
+`SESSION_SECURE=true`.
+
+Native PHP session state is separate and uses
+`NATIVE_SESSION_COOKIE_NAME` (default `npm_gateway_ui_state`) only for CSRF,
+flash messages, and temporary UI state. It must never equal the Gateway
+authentication cookie name.
+
+Manual validation after explicitly bootstrapping the normal local database:
+
+1. Run `php bin/gateway bootstrap:administrator`.
+2. Open `http://npm-gateway.local/login`.
+3. Sign in with the one-time credentials and confirm `/dashboard`.
+4. Submit the dashboard logout form and confirm return to `/login`.
+
 MySQL DDL may implicitly commit, so the runner does not pretend a batch is fully
 transactional. Rollback depends on every migration providing a correct
 `down()` implementation. Migration files must be committed to Git with the code

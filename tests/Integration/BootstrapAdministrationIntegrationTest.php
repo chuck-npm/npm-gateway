@@ -16,6 +16,18 @@ use NpmGateway\Services\NotificationService;
 use NpmGateway\Services\PasswordService;
 use NpmGateway\Services\SystemInitializationService;
 use NpmGateway\Services\UserService;
+use NpmGateway\Services\AuthenticationService;
+use NpmGateway\Services\SessionService;
+use NpmGateway\Services\LoginThrottleService;
+use NpmGateway\Repositories\SessionRepository;
+use NpmGateway\Repositories\LoginAttemptRepository;
+use NpmGateway\Configuration\AuthenticationConfig;
+use NpmGateway\Security\AuthenticationHasher;
+use NpmGateway\Support\SecureSessionTokenGenerator;
+use NpmGateway\ValueObjects\LoginRequest;
+use NpmGateway\ValueObjects\ClientContext;
+use NpmGateway\Exceptions\Domain\InvalidCredentialsException;
+use NpmGateway\Exceptions\Domain\InvalidSessionException;
 use NpmGateway\Support\PublicIdGenerator;
 use NpmGateway\Support\SecurePasswordGenerator;
 use NpmGateway\ValueObjects\CredentialNotice;
@@ -99,9 +111,62 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
                 self::assertSame(1, self::rowCount($connection, 'employees'));
                 self::assertSame(1, self::rowCount($connection, 'users'));
                 self::assertStringContainsString('Pending migrations: 0', implode("\n", MigrationCommand::execute('schema:verify', $testConfig, $application['root'] . '/database/migrations')));
-        } finally {
+
+                $authConfig = new AuthenticationConfig('npm_gateway_session', false, true, 'Lax', 60, 8, 15, 5, 5, 15, 10, 10, str_repeat('T', 32));
+                $hasher = new AuthenticationHasher($authConfig);
+                $sessionRepository = new SessionRepository($connection);
+                $attemptRepository = new LoginAttemptRepository($connection);
+                $sessionService = new SessionService($sessionRepository, $users, new SecureSessionTokenGenerator(), $hasher, $ids, $authConfig, new AuditService($audits, $ids));
+                $authentication = new AuthenticationService(
+                    new MySqlInitializationTransaction($connection), $users, $attemptRepository,
+                    new LoginThrottleService($attemptRepository, $authConfig), $sessionService,
+                    new AuditService($audits, $ids), $hasher, $ids, $authConfig
+                );
+                $clock = new MutableAuthenticationClock(new DateTimeImmutable('2026-07-28 09:00:00'));
+                try { $authentication->authenticate(new LoginRequest('unknown', 'TEST-invalid-password'), new ClientContext('192.0.2.10', 'Integration Agent', $clock->now())); self::fail('Unknown login succeeded.'); }
+                catch (InvalidCredentialsException) { self::addToAssertionCount(1); }
+                self::assertSame(0, (int) $connection->query('SELECT failed_login_count FROM users')->fetch_row()[0]);
+                for ($failure = 1; $failure <= 5; $failure++) {
+                    try { $authentication->authenticate(new LoginRequest('integrationadmin', 'TEST-wrong-password'), new ClientContext('192.0.2.10', 'Integration Agent', $clock->now())); self::fail('Invalid password succeeded.'); }
+                    catch (InvalidCredentialsException) { self::addToAssertionCount(1); }
+                }
+                $locked = $connection->query('SELECT failed_login_count, locked_until FROM users')->fetch_assoc();
+                self::assertSame(5, (int) $locked['failed_login_count']);
+                self::assertNotNull($locked['locked_until']);
+                self::assertSame(1, (int) $connection->query("SELECT COUNT(*) FROM audit_logs WHERE event_type='authentication.account_locked'")->fetch_row()[0]);
+                $clock->advance('+16 minutes');
+                $login = $authentication->authenticate(new LoginRequest('IntegrationAdmin', $result->generatedPassword()), new ClientContext('192.0.2.10', 'Integration Agent', $clock->now()));
+                self::assertSame(0, (int) $connection->query('SELECT failed_login_count FROM users')->fetch_row()[0]);
+                self::assertSame(1, self::rowCount($connection, 'user_sessions'));
+                $sessionRow = $connection->query('SELECT session_token_hash FROM user_sessions')->fetch_assoc();
+                self::assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $sessionRow['session_token_hash']);
+                self::assertNotSame($login->session->reveal(), $sessionRow['session_token_hash']);
+                self::assertSame('integrationadmin', $sessionService->validate($login->session->reveal(), new ClientContext('192.0.2.10', 'Integration Agent', $clock->now()))->user->username);
+                $clock->advance('+16 minutes');
+                $rotated = $sessionService->validate($login->session->reveal(), new ClientContext('192.0.2.10', 'Integration Agent', $clock->now()));
+                self::assertNotNull($rotated->rotatedToken);
+                try { $sessionService->validate($login->session->reveal(), new ClientContext('192.0.2.10', null, $clock->now())); self::fail('Old token remained valid.'); }
+                catch (InvalidSessionException) { self::addToAssertionCount(1); }
+                $clock->advance('+61 minutes');
+                try { $sessionService->validate($rotated->rotatedToken->reveal(), new ClientContext('192.0.2.10', null, $clock->now())); self::fail('Idle session remained valid.'); }
+                catch (InvalidSessionException) { self::addToAssertionCount(1); }
+                self::assertSame('idle_expired', $connection->query('SELECT revocation_reason FROM user_sessions')->fetch_row()[0]);
+                $newSession = $sessionService->create($login->user, new ClientContext('192.0.2.10', null, $clock->now()));
+                $clock->advance('+9 hours');
+                try { $sessionService->validate($newSession->reveal(), new ClientContext('192.0.2.10', null, $clock->now())); self::fail('Absolute-expired session remained valid.'); }
+                catch (InvalidSessionException) { self::addToAssertionCount(1); }
+                $logoutSession = $sessionService->create($login->user, new ClientContext('192.0.2.10', null, $clock->now()));
+                $sessionService->logout($logoutSession->reveal(), new ClientContext('192.0.2.10', null, $clock->now()));
+                self::assertSame(1, (int) $connection->query("SELECT COUNT(*) FROM user_sessions WHERE revocation_reason='logout'")->fetch_row()[0]);
+                self::assertSame(1, (int) $connection->query("SELECT COUNT(*) FROM audit_logs WHERE event_type='authentication.logout'")->fetch_row()[0]);
+                $allAudit = (string) $connection->query('SELECT GROUP_CONCAT(after_data) FROM audit_logs')->fetch_row()[0];
+                self::assertStringNotContainsString($result->generatedPassword(), $allAudit);
+                self::assertStringNotContainsString($login->session->reveal(), $allAudit);
+            } finally {
             if ($connection instanceof mysqli) {
                 $connection->query('DELETE FROM audit_logs');
+                $connection->query('DELETE FROM login_attempts');
+                $connection->query('DELETE FROM user_sessions');
                 $connection->query('DELETE FROM users');
                 $connection->query('DELETE FROM employees');
                 foreach (['properties', 'employees', 'users', 'employee_property_assignments', 'audit_logs', 'user_sessions', 'login_attempts'] as $table) {
@@ -119,4 +184,10 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
 final class IntegrationCredentialNotifier implements CredentialNotifierInterface
 {
     public function notify(CredentialNotice $notice): void {}
+}
+final class MutableAuthenticationClock
+{
+    public function __construct(private DateTimeImmutable $time) {}
+    public function now(): DateTimeImmutable { return $this->time; }
+    public function advance(string $modify): void { $this->time = $this->time->modify($modify); }
 }

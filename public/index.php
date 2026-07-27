@@ -1,54 +1,36 @@
 <?php
-
 declare(strict_types=1);
+use NpmGateway\Configuration\AuthenticationConfig;
+use NpmGateway\Container\ServiceProvider;
+use NpmGateway\Contracts\ClockInterface;
+use NpmGateway\Http\Controllers\AuthenticationController;
+use NpmGateway\Http\Controllers\DashboardController;
+use NpmGateway\Http\Middleware\RequireAuthenticationMiddleware;
+use NpmGateway\Http\Request;
+use NpmGateway\Http\SessionCookie;
+use NpmGateway\Http\WebKernel;
+use NpmGateway\Security\CsrfService;
+use NpmGateway\Services\AuthenticationService;
+use NpmGateway\Services\SessionService;
 
-use NpmGateway\Http\Request\RouteMatcher;
-
-$application = require dirname(__DIR__) . DIRECTORY_SEPARATOR . 'bootstrap' . DIRECTORY_SEPARATOR . 'app.php';
-$projectRoot = $application['root'];
-$appConfig = $application['config']['app'];
-$applicationName = (string) ($appConfig['name'] ?? 'NPM Gateway');
-$environment = (string) ($appConfig['environment'] ?? 'production');
-$requestPath = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
-$requestPath = is_string($requestPath) ? rtrim($requestPath, '/') : '/';
-$requestPath = $requestPath === '' ? '/' : $requestPath;
-$responseStatus = 200;
-
-header('Content-Type: text/html; charset=UTF-8');
-
-if ($requestPath === '/') {
-    $pageTitle = $applicationName;
-    $navbarItems = [];
-    $navbarUserLabel = 'User menu';
-    $contentHtml = sprintf(
-        '<section class="gateway-panel"><span class="gateway-eyebrow">Internal company portal</span>'
-        . '<h1 class="gateway-title">%s</h1><p class="gateway-lead">Application foundation loaded successfully.</p></section>',
-        htmlspecialchars($applicationName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
-    );
-
-    require $projectRoot . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'views'
-        . DIRECTORY_SEPARATOR . 'layouts' . DIRECTORY_SEPARATOR . 'app.php';
-    return;
+$application=require dirname(__DIR__).'/bootstrap/app.php';$root=$application['root'];$environment=(string)$application['config']['app']['environment'];
+$path=parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH);$path=is_string($path)?rtrim($path,'/'):'/';$path=$path===''?'/':$path;
+if($path==='/component-showcase'&&in_array($environment,['local','development'],true)){
+ $responseStatus=200;$pageTitle='Component Showcase — Development Only';$navbarItems=[];$navbarUserLabel='User menu';ob_start();require $root.'/resources/views/pages/component-showcase.php';$contentHtml=(string)ob_get_clean();require $root.'/resources/views/layouts/app.php';return;
 }
-
-$routes = require $projectRoot . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . 'web.php';
-
-$route = (new RouteMatcher())->match($requestPath, $environment, $routes);
-
-if ($route === null) {
-    $responseStatus = 404;
-    http_response_code($responseStatus);
-    require $projectRoot . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'views'
-        . DIRECTORY_SEPARATOR . 'errors' . DIRECTORY_SEPARATOR . '404.php';
-    return;
+if($path==='/component-showcase'){
+ $responseStatus=404;http_response_code(404);require $root.'/resources/views/errors/404.php';return;
 }
-
-$viewPath = $projectRoot . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'views'
-    . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $route['view']);
-
-ob_start();
-require $viewPath;
-$contentHtml = (string) ob_get_clean();
-
-require $projectRoot . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'views'
-    . DIRECTORY_SEPARATOR . 'layouts' . DIRECTORY_SEPARATOR . 'app.php';
+$container=ServiceProvider::build($application);$authConfig=$container->get(AuthenticationConfig::class);
+$nativeSession=require $root.'/config/session.php';$nativeSessionName=(string)$nativeSession['name'];
+if(!preg_match('/^[A-Za-z][A-Za-z0-9_-]{1,63}$/',$nativeSessionName)||hash_equals($authConfig->cookieName,$nativeSessionName)){throw new RuntimeException('Native PHP and Gateway authentication cookie names must be valid and distinct.');}
+if(session_status()!==PHP_SESSION_ACTIVE){ini_set('session.use_strict_mode','1');ini_set('session.use_only_cookies','1');session_name($nativeSessionName);session_set_cookie_params(['lifetime'=>0,'path'=>'/','secure'=>$authConfig->secure,'httponly'=>true,'samesite'=>$authConfig->sameSite]);session_start();}
+$csrf=new CsrfService($_SESSION);$cookie=new SessionCookie($authConfig);$views=$root.'/resources/views';
+$authentication=new AuthenticationController($container->get(AuthenticationService::class),$container->get(SessionService::class),$cookie,$csrf,$views);
+$kernel=new WebKernel($authentication,new DashboardController($csrf,$views),new RequireAuthenticationMiddleware($container->get(SessionService::class),$cookie));
+$request=new Request(strtoupper((string)($_SERVER['REQUEST_METHOD']??'GET')),$path,array_map('strval',$_POST),array_map('strval',$_COOKIE),array_map('strval',$_SERVER));
+$response=$kernel->handle($request,$container->get(ClockInterface::class)->now());http_response_code($response->status);
+foreach($response->headers as $name=>$value)header($name.': '.$value);
+foreach($response->cookies as $definition){$name=$definition['name'];$value=$definition['value'];unset($definition['name'],$definition['value']);setcookie($name,$value,$definition);}
+header('Content-Type: text/html; charset=UTF-8');echo $response->body;
+$container->get(mysqli::class)->close();

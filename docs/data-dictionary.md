@@ -152,3 +152,34 @@ Delivery produces an immutable sent, failed, or explicitly skipped-local audit
 event. On failure the administrator remains committed, the operator receives a
 distinct result, and the one-time password must be handled securely. It cannot
 be resent because Gateway intentionally retains no recoverable password.
+
+## Authentication runtime rules
+
+Usernames are trimmed and lowercased before lookup. Passwords are verified with
+`password_verify`; successful verification may opportunistically replace an
+outdated hash. Unknown and invalid usernames are checked against a runtime
+dummy hash to reduce timing differences. Browser errors remain neutral.
+
+`users.failed_login_count` is the consecutive applicable known-user password
+failure count. The fifth failure sets `locked_until` 15 minutes ahead. Unknown,
+disabled, already locked, and IP-rate-limited attempts do not arbitrarily
+increment it. Successful login resets the count and clears `locked_until`.
+
+Every authentication attempt creates one immutable `login_attempts` row.
+Submitted usernames and IP addresses use separately domain-separated keyed
+hashes; raw values are not stored. The initial IP policy is ten failures in ten
+minutes.
+
+`user_sessions` stores only a domain-separated HMAC-SHA-256 token hash. The raw
+32-byte URL-safe token exists only in the browser cookie and controlled return
+objects. Idle expiry is 60 minutes, absolute expiry eight hours, and rotation is
+due after 15 minutes. Activity writes are throttled to five minutes and idle
+expiry is capped by absolute expiry. Rotation conditionally replaces the old
+hash, so one concurrent request wins and stale requests reauthenticate.
+
+Revocation preserves rows with approved reasons including `logout`,
+`idle_expired`, `absolute_expired`, and `account_disabled`. Successful login
+creates `authentication.login_succeeded`; lockout creates
+`authentication.account_locked`; logout creates `authentication.logout` and
+`authentication.session_revoked`. Audit metadata never contains passwords,
+password hashes, raw tokens, or token hashes.
