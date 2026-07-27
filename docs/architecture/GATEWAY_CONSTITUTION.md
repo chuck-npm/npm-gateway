@@ -29,3 +29,8 @@ Native PHP sessions and Gateway authentication sessions are distinct. Native
 sessions hold CSRF, flash, and temporary UI state under their own cookie;
 Gateway's opaque authentication cookie is validated through `SessionService`
 and `user_sessions`. A Gateway token is never used as a PHP session ID.
+
+Dashboards present verified facts and truthful empty states; they never invent
+operational data to fill space. Navigation exposes only implemented
+capabilities, and hidden controls never constitute authorization. Authenticated
+identity remains request-scoped, and the presentation layer remains replaceable.

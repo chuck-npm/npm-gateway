@@ -3,6 +3,7 @@ declare(strict_types=1);
 use NpmGateway\Configuration\AuthenticationConfig;
 use NpmGateway\Contracts\AuthenticationServiceInterface;
 use NpmGateway\Contracts\SessionServiceInterface;
+use NpmGateway\Contracts\DashboardSummaryStoreInterface;
 use NpmGateway\Exceptions\Domain\InvalidCredentialsException;
 use NpmGateway\Exceptions\Domain\InvalidSessionException;
 use NpmGateway\Http\Controllers\AuthenticationController;
@@ -12,6 +13,7 @@ use NpmGateway\Http\Request;
 use NpmGateway\Http\SessionCookie;
 use NpmGateway\Http\WebKernel;
 use NpmGateway\Security\CsrfService;
+use NpmGateway\Services\DashboardSummaryService;
 use NpmGateway\ValueObjects\AuthenticatedUser;
 use NpmGateway\ValueObjects\AuthenticationResult;
 use NpmGateway\ValueObjects\ClientContext;
@@ -25,7 +27,7 @@ final class AuthenticationWorkflowTest extends TestCase
  protected function setUp():void
  {
   $config=new AuthenticationConfig('npm_gateway_session',false,true,'Lax',60,8,15,5,5,15,10,10,str_repeat('K',32));$csrf=new CsrfService($this->state);$csrf->token();$cookie=new SessionCookie($config);$this->authentication=new FakeBrowserAuthentication();$this->sessions=new FakeBrowserSessions();
-  $views=dirname(__DIR__,2).'/resources/views';$this->kernel=new WebKernel(new AuthenticationController($this->authentication,$this->sessions,$cookie,$csrf,$views),new DashboardController($csrf,$views),new RequireAuthenticationMiddleware($this->sessions,$cookie));
+  $views=dirname(__DIR__,2).'/resources/views';$summaries=new DashboardSummaryService(new FakeDashboardSummaryStore());$this->kernel=new WebKernel(new AuthenticationController($this->authentication,$this->sessions,$cookie,$csrf,$views),new DashboardController($csrf,$summaries,$views),new RequireAuthenticationMiddleware($this->sessions,$cookie));
  }
  public function testGetLoginRendersCsrfAndFields():void{$r=$this->kernel->handle(new Request('GET','/login'),$this->now());self::assertSame(200,$r->status);self::assertStringContainsString($this->state['csrf'],$r->body);self::assertStringContainsString('name="password"',$r->body);}
  public function testFailedLoginIsNeutralAndNeverEchoesPassword():void{$this->authentication->fail=true;$r=$this->kernel->handle($this->loginRequest('TEST-secret-password'),$this->now());self::assertSame(200,$r->status);self::assertStringContainsString('We could not sign you in',$r->body);self::assertStringNotContainsString('TEST-secret-password',$r->body);self::assertSame([],$r->cookies);}
@@ -45,7 +47,11 @@ final class FakeBrowserAuthentication implements AuthenticationServiceInterface
 final class FakeBrowserSessions implements SessionServiceInterface
 {
  public bool $invalid=false;public bool $loggedOut=false;
- public static function user():AuthenticatedUser{return new AuthenticatedUser(1,2,str_repeat('U',26),str_repeat('E',26),'admin','Test Administrator');}
+ public static function user():AuthenticatedUser{return new AuthenticatedUser(1,2,str_repeat('U',26),str_repeat('E',26),'admin','Test Administrator','Gateway Administrator');}
  public function validate(string $raw,ClientContext $context):SessionValidationResult{if($this->invalid)throw new InvalidSessionException('Invalid');return new SessionValidationResult(self::user());}
  public function logout(string $raw,ClientContext $context):void{$this->loggedOut=true;}
+}
+final class FakeDashboardSummaryStore implements DashboardSummaryStoreInterface
+{
+ public function counts():array{return ['property_count'=>0,'employee_count'=>1,'user_count'=>1,'active_user_count'=>1,'active_assignment_count'=>0];}
 }

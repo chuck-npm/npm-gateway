@@ -8,12 +8,15 @@ $applicationName = isset($applicationName) ? (string) $applicationName : 'NPM Ga
 $pageTitle = isset($pageTitle) ? (string) $pageTitle : $applicationName;
 $navbarItems = isset($navbarItems) && is_array($navbarItems) ? $navbarItems : [];
 $navbarUserLabel = isset($navbarUserLabel) ? (string) $navbarUserLabel : 'User menu';
+$navbarUserContext = isset($navbarUserContext) ? (string) $navbarUserContext : '';
+$logoutCsrfToken = isset($logoutCsrfToken) ? (string) $logoutCsrfToken : '';
 $footerText = isset($footerText) ? (string) $footerText : 'NPM Gateway — Internal use only';
 
 require $componentDirectory . DIRECTORY_SEPARATOR . 'header.php';
-require $componentDirectory . DIRECTORY_SEPARATOR . 'navbar.php';
+?><a class="gateway-skip-link" href="#main-content">Skip to main content</a>
+<header class="gateway-app-header"><?php require $componentDirectory . DIRECTORY_SEPARATOR . 'navbar.php'; ?></header><?php
 ?>
-<main class="gateway-main">
+<main class="gateway-main" id="main-content" tabindex="-1">
     <div class="container">
         <?= $contentHtml ?>
     </div>

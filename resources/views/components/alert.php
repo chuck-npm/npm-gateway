@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
-$alertType = isset($alertType) && in_array($alertType, ['info', 'success', 'warning', 'danger'], true)
+$alertType = isset($alertType) && in_array($alertType, ['info', 'success', 'warning', 'danger', 'error'], true)
     ? (string) $alertType
     : 'info';
 $alertTitle = isset($alertTitle) ? (string) $alertTitle : '';
 $alertMessage = isset($alertMessage) ? (string) $alertMessage : '';
 $dismissible = isset($dismissible) && $dismissible === true;
+if($alertMessage==='')return;
+$alertType=$alertType==='error'?'danger':$alertType;
 ?>
 <div class="alert gateway-alert gateway-alert--<?= htmlspecialchars($alertType, ENT_QUOTES, 'UTF-8') ?><?= $dismissible ? ' alert-dismissible fade show' : '' ?>"
      role="alert">

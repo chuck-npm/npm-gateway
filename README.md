@@ -293,6 +293,24 @@ Manual validation after explicitly bootstrapping the normal local database:
 3. Sign in with the one-time credentials and confirm `/dashboard`.
 4. Submit the dashboard logout form and confirm return to `/login`.
 
+## Dashboard foundation
+
+`GET /dashboard` uses the permanent authenticated shell: a skip link, dark
+top navigation, page header, responsive content grid, authenticated user menu,
+and footer. Only implemented routes appear in navigation; Gateway does not use
+a permanent sidebar.
+
+Dashboard totals are read-only facts supplied by `DashboardSummaryService`.
+When no properties exist, the page presents non-interactive upcoming setup
+tasks. When properties exist, it shows a neutral ready state. Charts, trends,
+activity, and operational metrics are not shown unless backed by implemented,
+verified data.
+
+For local browser validation, sign in, confirm the Dashboard navigation state
+and real counts at desktop and mobile widths, then use the CSRF-protected Sign
+out form. The native UI-state and Gateway authentication cookies must remain
+distinct.
+
 MySQL DDL may implicitly commit, so the runner does not pretend a batch is fully
 transactional. Rollback depends on every migration providing a correct
 `down()` implementation. Migration files must be committed to Git with the code

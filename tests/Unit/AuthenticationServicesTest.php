@@ -10,6 +10,8 @@ use NpmGateway\Security\AuthenticationHasher;
 use NpmGateway\Security\CsrfService;
 use NpmGateway\Services\AuthenticationService;
 use NpmGateway\Services\SessionService;
+use NpmGateway\Services\DashboardSummaryService;
+use NpmGateway\Contracts\DashboardSummaryStoreInterface;
 use NpmGateway\Support\SecureSessionTokenGenerator;
 use NpmGateway\ValueObjects\AuthenticatedUser;
 use NpmGateway\ValueObjects\LoginRequest;
@@ -57,7 +59,7 @@ final class AuthenticationServicesTest extends TestCase
  }
  public function testDashboardDisplaysOnlyApprovedIdentity():void
  {
-  $state=[];$controller=new DashboardController(new CsrfService($state),dirname(__DIR__,2).'/resources/views');$user=new AuthenticatedUser(1,2,str_repeat('U',26),str_repeat('E',26),'admin','Test Admin');$response=$controller->index(new AuthenticatedRequestContext($user,str_repeat('x',43)));self::assertStringContainsString('Test Admin',$response->body);self::assertStringContainsString('admin',$response->body);self::assertStringNotContainsString(str_repeat('x',43),$response->body);self::assertStringContainsString('method="post" action="/logout"',$response->body);
+  $state=[];$store=new class implements DashboardSummaryStoreInterface{public function counts():array{return ['property_count'=>0,'employee_count'=>1,'user_count'=>1,'active_user_count'=>1,'active_assignment_count'=>0];}};$controller=new DashboardController(new CsrfService($state),new DashboardSummaryService($store),dirname(__DIR__,2).'/resources/views');$user=new AuthenticatedUser(1,2,str_repeat('U',26),str_repeat('E',26),'admin','Test Admin','Administrator');$response=$controller->index(new AuthenticatedRequestContext($user,str_repeat('x',43)));self::assertStringContainsString('Test Admin',$response->body);self::assertStringContainsString('@admin · Administrator',$response->body);self::assertStringContainsString('Welcome to NPM Gateway',$response->body);self::assertStringNotContainsString(str_repeat('x',43),$response->body);self::assertStringContainsString('method="post" action="/logout"',$response->body);
  }
  public function testArchitectureBoundariesAndNoMigration003():void
  {

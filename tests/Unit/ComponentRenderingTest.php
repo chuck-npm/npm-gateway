@@ -24,6 +24,8 @@ final class ComponentRenderingTest extends TestCase
             'sidebar',
             'navbar',
             'pagination',
+            'status-badge',
+            'dashboard-card',
         ] as $component) {
             yield $component => [$component];
         }

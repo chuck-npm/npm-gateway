@@ -21,6 +21,8 @@ use NpmGateway\Services\SessionService;
 use NpmGateway\Services\LoginThrottleService;
 use NpmGateway\Repositories\SessionRepository;
 use NpmGateway\Repositories\LoginAttemptRepository;
+use NpmGateway\Repositories\DashboardSummaryRepository;
+use NpmGateway\Services\DashboardSummaryService;
 use NpmGateway\Configuration\AuthenticationConfig;
 use NpmGateway\Security\AuthenticationHasher;
 use NpmGateway\Support\SecureSessionTokenGenerator;
@@ -136,6 +138,20 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
                 self::assertSame(1, (int) $connection->query("SELECT COUNT(*) FROM audit_logs WHERE event_type='authentication.account_locked'")->fetch_row()[0]);
                 $clock->advance('+16 minutes');
                 $login = $authentication->authenticate(new LoginRequest('IntegrationAdmin', $result->generatedPassword()), new ClientContext('192.0.2.10', 'Integration Agent', $clock->now()));
+                $dashboard = new DashboardSummaryService(new DashboardSummaryRepository($connection));
+                $initialSummary = $dashboard->forUser($login->user);
+                self::assertSame(0, $initialSummary->propertyCount);
+                self::assertSame(1, $initialSummary->employeeCount);
+                self::assertSame(1, $initialSummary->userCount);
+                self::assertSame(1, $initialSummary->activeUserCount);
+                self::assertSame(0, $initialSummary->activeAssignmentCount);
+                self::assertTrue($initialSummary->initialSetup);
+                $propertyId = $ids->generate();
+                $property = $connection->prepare("INSERT INTO properties (public_id,property_code,slug,display_name,status,manager_email,ivr_number,address_line_1,city,state,postal_code,timezone) VALUES (?,'IT','integration-test','Integration Test Property','active','manager@integration.example.test','+1555010199','1 Test Way','Testville','OH','43000','America/New_York')");
+                $property->bind_param('s',$propertyId);$property->execute();$property->close();
+                $configuredSummary = $dashboard->forUser($login->user);
+                self::assertSame(1, $configuredSummary->propertyCount);
+                self::assertFalse($configuredSummary->initialSetup);
                 self::assertSame(0, (int) $connection->query('SELECT failed_login_count FROM users')->fetch_row()[0]);
                 self::assertSame(1, self::rowCount($connection, 'user_sessions'));
                 $sessionRow = $connection->query('SELECT session_token_hash FROM user_sessions')->fetch_assoc();
@@ -164,6 +180,7 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
                 self::assertStringNotContainsString($login->session->reveal(), $allAudit);
             } finally {
             if ($connection instanceof mysqli) {
+                $connection->query('DELETE FROM properties');
                 $connection->query('DELETE FROM audit_logs');
                 $connection->query('DELETE FROM login_attempts');
                 $connection->query('DELETE FROM user_sessions');

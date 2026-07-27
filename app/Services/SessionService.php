@@ -43,7 +43,7 @@ final class SessionService implements SessionServiceInterface
   if(preg_match('/^[A-Za-z0-9_-]{43}$/',$raw)!==1)return;$hash=$this->hasher->session($raw);$session=$this->sessions->findByHash($hash);$this->sessions->revokeByHash($hash,$this->format($context->now),'logout');
   if($session&&$this->audits){$user=$this->users->findActiveIdentity((int)$session['user_id']);if($user){$identity=$this->identity($user);foreach(['authentication.logout','authentication.session_revoked'] as $event)$this->audits->record($event,$identity->id,$identity->employeeId,$identity->publicId,'Gateway session revoked.',['session_public_id'=>$session['public_id'],'reason'=>'logout','revoked_at'=>$this->format($context->now)],$this->format($context->now));}}
  }
- private function identity(array $r):AuthenticatedUser{return new AuthenticatedUser((int)$r['id'],(int)$r['employee_id'],(string)$r['public_id'],(string)$r['employee_public_id'],(string)$r['username'],trim($r['first_name'].' '.$r['last_name']));}
+ private function identity(array $r):AuthenticatedUser{return new AuthenticatedUser((int)$r['id'],(int)$r['employee_id'],(string)$r['public_id'],(string)$r['employee_public_id'],(string)$r['username'],trim($r['first_name'].' '.$r['last_name']),(string)($r['job_title']??''));}
  private function agent(?string $agent):?string{if($agent===null)return null;return substr(preg_replace('/[\\x00-\\x1F\\x7F]/','',(string)$agent),0,500);}
  private function format(\DateTimeImmutable $date):string{return $date->format('Y-m-d H:i:s');}
 }
