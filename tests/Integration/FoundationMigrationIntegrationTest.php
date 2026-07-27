@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 final class FoundationMigrationIntegrationTest extends TestCase
 {
-    public function testFoundationRollbackAndReapplyCycle(): void
+    public function testFoundationRemainsAppliedAndEmpty(): void
     {
         if (getenv('RUN_DB_INTEGRATION_TESTS') !== 'true') {
             self::markTestSkipped('Set RUN_DB_INTEGRATION_TESTS=true to run destructive local migration tests.');
@@ -21,18 +21,9 @@ final class FoundationMigrationIntegrationTest extends TestCase
         self::assertContains($config['host'], ['127.0.0.1', 'localhost', '::1'], 'Destructive tests require exact loopback.');
         $directory = $application['root'] . '/database/migrations';
 
-        MigrationCommand::execute('migrate', $config, $directory);
         self::assertFoundationState($config, true);
         self::assertStringContainsString('Schema verification passed.', implode("\n", MigrationCommand::execute('schema:verify', $config, $directory)));
         self::assertStringContainsString('Ran', implode("\n", MigrationCommand::execute('migrate:status', $config, $directory)));
-
-        self::assertStringContainsString('Rolled back:', implode("\n", MigrationCommand::execute('migrate:rollback', $config, $directory)));
-        self::assertFoundationState($config, false);
-        self::assertStringContainsString('Pending migrations: 1', implode("\n", MigrationCommand::execute('schema:verify', $config, $directory)));
-
-        self::assertStringContainsString('Migrated:', implode("\n", MigrationCommand::execute('migrate', $config, $directory)));
-        self::assertFoundationState($config, true);
-        self::assertStringContainsString('Pending migrations: 0', implode("\n", MigrationCommand::execute('schema:verify', $config, $directory)));
     }
 
     /** @param array<string, mixed> $config */

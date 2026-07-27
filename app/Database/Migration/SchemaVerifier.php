@@ -72,8 +72,12 @@ final class SchemaVerifier
             array_map(static fn (MigrationRecord $record): string => $record->migration, $records),
             true
         );
+        $authenticationSecurityApplied = isset($executed[AuthenticationSecuritySchema::MIGRATION]);
         if (isset($executed[FoundationSchema::MIGRATION])) {
-            $this->verifyFoundationSchema();
+            $this->verifyFoundationSchema($authenticationSecurityApplied);
+        }
+        if ($authenticationSecurityApplied) {
+            $this->verifyAuthenticationSecuritySchema();
         }
 
         return [
@@ -83,7 +87,7 @@ final class SchemaVerifier
         ];
     }
 
-    private function verifyFoundationSchema(): void
+    private function verifyFoundationSchema(bool $authenticationSecurityApplied): void
     {
         foreach (FoundationSchema::expectations() as $table => $expected) {
             $metadata = $this->tableMetadata($table);
@@ -107,16 +111,65 @@ final class SchemaVerifier
                 }
             }
             foreach ($expected['checks'] as $check) {
+                if ($authenticationSecurityApplied && $check === 'chk_users_must_change_password') {
+                    continue;
+                }
                 if (!isset($metadata['checks'][$check])) {
                     throw new MigrationException("Missing check constraint {$check} on {$table}.");
                 }
             }
         }
 
+        $userColumns = $this->tableMetadata('users')['columns'];
+        if ($authenticationSecurityApplied && isset($userColumns['must_change_password'])) {
+            throw new MigrationException('users must not contain must_change_password after Authentication Security.');
+        }
+
         $auditColumns = $this->tableMetadata('audit_logs')['columns'];
         foreach (['updated_at', 'created_by', 'updated_by'] as $forbidden) {
             if (isset($auditColumns[$forbidden])) {
                 throw new MigrationException("audit_logs must not contain {$forbidden}.");
+            }
+        }
+    }
+
+    private function verifyAuthenticationSecuritySchema(): void
+    {
+        foreach (AuthenticationSecuritySchema::expectations() as $table => $expected) {
+            $metadata = $this->tableMetadata($table);
+            if (strcasecmp($metadata['engine'], 'InnoDB') !== 0) {
+                throw new MigrationException("{$table} must use InnoDB.");
+            }
+            if (strcasecmp($metadata['collation'], 'utf8mb4_0900_ai_ci') !== 0) {
+                throw new MigrationException("{$table} has an invalid collation.");
+            }
+            foreach ($expected['columns'] as $column) {
+                if (!isset($metadata['columns'][$column])) {
+                    throw new MigrationException("Missing column {$column} on {$table}.");
+                }
+            }
+            foreach ($expected['forbidden_columns'] as $column) {
+                if (isset($metadata['columns'][$column])) {
+                    throw new MigrationException("Forbidden column {$column} exists on {$table}.");
+                }
+            }
+            foreach ($expected['indexes'] as $index) {
+                if (!isset($metadata['indexes'][$index])) {
+                    throw new MigrationException("Missing index {$index} on {$table}.");
+                }
+            }
+            foreach ($expected['foreign_keys'] as $foreignKey) {
+                if (!isset($metadata['foreign_keys'][$foreignKey])) {
+                    throw new MigrationException("Missing foreign key {$foreignKey} on {$table}.");
+                }
+                if ($metadata['foreign_keys'][$foreignKey] === 'CASCADE') {
+                    throw new MigrationException("Unexpected ON DELETE CASCADE on {$foreignKey}.");
+                }
+            }
+            foreach ($expected['checks'] as $check) {
+                if (!isset($metadata['checks'][$check])) {
+                    throw new MigrationException("Missing check constraint {$check} on {$table}.");
+                }
             }
         }
     }
@@ -143,7 +196,7 @@ final class SchemaVerifier
         $row = $statement->get_result()->fetch_assoc();
         $statement->close();
         if (!is_array($row)) {
-            throw new MigrationException("Missing Foundation table: {$table}.");
+            throw new MigrationException("Missing expected table: {$table}.");
         }
 
         $columns = $this->namedSet(

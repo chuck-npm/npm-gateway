@@ -75,9 +75,11 @@ MIGRATION_DB_SSL_CA=C:\certificates\managed-mysql-ca.pem
 ## Current phase
 
 The Core Platform Foundation migration creates `properties`, `employees`,
-`users`, `employee_property_assignments`, and `audit_logs`. It creates no seed
-users, employees, properties, assignments, or audit events. Authentication
-workflows, authorization, and portal modules remain separate phases.
+`users`, `employee_property_assignments`, and `audit_logs`. Authentication
+Security adds `user_sessions` and `login_attempts` and removes the obsolete
+`users.must_change_password` workflow. These migrations create no seed users,
+employees, properties, assignments, sessions, attempts, or audit events.
+Authorization and portal modules remain separate phases.
 
 ## Presentation foundation
 
@@ -211,6 +213,15 @@ reapply—before production use. Foundation creates no administrator, sample
 property, or other seed data. See the
 [`data dictionary`](docs/data-dictionary.md) for the authoritative schema and
 business rules.
+
+Authentication is administrator-managed: users cannot choose or change
+passwords, request self-service resets, or use **Remember me**. Sessions use a
+60-minute idle timeout, eight-hour absolute lifetime, and periodic identifier
+rotation. Five consecutive failures lock an account for 15 minutes.
+
+Credential notices are reserved for a later secure mail service and use the
+dedicated `GATEWAY_CREDENTIAL_NOTICE_*` environment settings documented in
+`.env.example`.
 
 MySQL DDL may implicitly commit, so the runner does not pretend a batch is fully
 transactional. Rollback depends on every migration providing a correct

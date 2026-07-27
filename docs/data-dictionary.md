@@ -1,6 +1,6 @@
 # NPM Gateway Data Dictionary
 
-Version 1.0 — Foundation migration `202607270001_foundation`.
+Version 1.1 — Foundation migration `202607270001_foundation` and Authentication Security migration `202607270002_authentication_security`.
 
 > **No migration may modify an existing business table unless the data dictionary is updated as part of the same change.**
 
@@ -49,13 +49,13 @@ Gateway authentication identities only; no HR/property contact data belongs here
 |---|---|
 | `id`, `public_id`, `employee_id` | Internal/public IDs and required unique employee owner. |
 | `username`, `password_hash`, `status` | Permanent login, PHP password hash, and pending/active/locked/disabled state. |
-| `must_change_password`, `password_changed_at`, `password_reset_at` | Password lifecycle. |
+| `password_changed_at`, `password_reset_at` | Administrator-managed password lifecycle. |
 | `last_login_at`, `failed_login_count`, `locked_until`, `disabled_at` | Login, lockout, and disabling state. |
 | `created_at`, `updated_at`, `created_by`, `updated_by` | Timestamps and optional self-referencing user actors. |
 
-Unique indexes: public ID, employee ID, username. Other indexes: status and lock expiry. Checks: lowercase username, pattern `^[a-z][a-z0-9]{1,49}$`, status, boolean password-change flag, consistent disabled state. Employee and audit foreign keys use RESTRICT.
+Unique indexes: public ID, employee ID, username. Other indexes: status and lock expiry. Checks: lowercase username, pattern `^[a-z][a-z0-9]{1,49}$`, status, and consistent disabled state. Employee and audit foreign keys use RESTRICT. Authentication Security removed `must_change_password`; Gateway has no forced password-change workflow.
 
-An employee has zero or one user; maintenance employees have none. Usernames normally begin with the first name, with duplicates such as `john2`; they are normalized lowercase, permanent, and never reused. Accounts are disabled, never deleted. There is no self-service recovery. Authorized administrators reset passwords, invalidate active sessions, and set `must_change_password = 1`. Plaintext passwords are forbidden.
+An employee has zero or one user; maintenance employees have none. Usernames normally begin with the first name, with duplicates such as `john2`; they are normalized lowercase, permanent, and never reused. Accounts are disabled, never deleted. There is no self-service recovery and users cannot select initial passwords, change passwords, or request resets. Authorized administrators create and replace passwords and revoke all active sessions on replacement. Plaintext passwords are forbidden.
 
 ## `employee_property_assignments`
 
@@ -87,3 +87,45 @@ Append-only operational/security history.
 Indexes cover time; user/employee/property/event plus time; and entity internal/public identity. Actor/property foreign keys use RESTRICT; the IP hash has a named format check. There are intentionally no update or audit-actor columns.
 
 Audit rows are never updated or normally deleted. Sensitive values must be redacted before insertion. Passwords/hashes, temporary credentials, sessions, raw tokens, SMTP credentials, and database credentials are forbidden. System events may have null user IDs. Event types will be governed by application constants/value objects.
+
+## `user_sessions`
+
+Tracks authenticated sessions for validation, expiration, rotation, and immediate revocation. Raw session identifiers are never persisted; revoked and expired records are temporarily retained for security history.
+
+| Columns | Meaning |
+|---|---|
+| `id`, `public_id`, `user_id` | Internal/public IDs and required user owner. |
+| `session_token_hash` | Unique keyed SHA-256 or equivalent hash; never a raw token. |
+| `ip_hash`, `user_agent` | Optional privacy-preserving client identity. |
+| `last_activity_at`, `idle_expires_at`, `absolute_expires_at`, `rotated_at` | Activity, 60-minute idle expiry, eight-hour hard expiry, and last rotation. |
+| `revoked_at`, `revoked_by`, `revocation_reason` | Revocation state and responsible account. |
+| `created_at` | Session creation time. |
+
+Unique indexes cover public ID and token hash. Other indexes support active sessions and expiry/revocation cleanup. User and revoker foreign keys use RESTRICT. Checks enforce lowercase 64-character hashes, expiration and rotation ordering, approved reasons, and consistent revocation state. There are no generic update or audit-actor columns.
+
+PHP session IDs and database tokens use cryptographically secure generation. Only an HMAC/keyed hash using `APP_KEY` or a derived secret is stored. Raw tokens must never enter logs, email, audit JSON, or persistent storage. Validation requires an active account, an unrevoked session, and unexpired idle and absolute limits. Controlled services update activity (possibly throttled), rotate immediately after login and approximately every 15 minutes, revoke at logout, and revoke all sessions after password replacement or account disablement. There is no persistent login or **Remember me**. Cleanup will use a later approved maintenance command; active sessions are never physically deleted.
+
+## `login_attempts`
+
+Immutable successful and failed authentication attempts for lockout, throttling, investigation, and audit support. Guessed usernames are deliberately not stored in plaintext.
+
+| Columns | Meaning |
+|---|---|
+| `id`, `public_id` | Internal and unique public IDs. |
+| `submitted_username_hash`, `user_id` | Keyed HMAC of the normalized lowercase submission and optional matched user. |
+| `was_successful`, `failure_reason` | Result and approved internal reason. |
+| `ip_hash`, `user_agent`, `attempted_at` | Optional client identity and attempt time. |
+
+Indexes cover public ID, submitted hash/time, user/time, IP/time, result/time, and attempt time. The optional user foreign key uses RESTRICT. Checks enforce hash formats, boolean results, approved failure reasons, and success/failure consistency. There are no generic update or audit-actor columns.
+
+Every attempt is recorded. Unknown usernames have null user IDs; known users may still record invalid credentials, disabled, locked, or rate-limited outcomes. User-visible failures remain neutral. Five consecutive failures lock the account for 15 minutes; successful authentication clears the counter and lock. IP throttling is applied by application services, initially suggested as ten failures in ten minutes. Exact limits belong in configuration. Retention and cleanup will be established later.
+
+## Authentication and credential delivery policy
+
+Gateway-generated passwords use `random_bytes()` or an equivalent cryptographically secure source and at least 24 characters of entropy. Easily confused characters may be avoided. Hash with `PASSWORD_ARGON2ID` when operationally available, otherwise `PASSWORD_DEFAULT` with the runtime algorithm documented. A plaintext password may be displayed once to an authorized administrator, then its variable is cleared after hashing, display, and approved delivery. It must never appear in logs, exceptions, tests, audit events, or command history.
+
+Administrator password replacement updates the hash and password timestamps, clears failure and lock state, revokes active sessions, and creates an audit event. High-value events such as successful login, lock, logout, reset, disable/enable, and session revocation use `audit_logs`; detailed rejected attempts belong in `login_attempts`.
+
+Future credential notices use the dedicated `GATEWAY_CREDENTIAL_NOTICE_*` settings and subject `secure - NPM Gateway User Credentials`. The body may include approved employee, account, property, phone, and administrator context, but is never logged. Production mail debugging is disabled. Delivery failure must be reported safely, and provisioning must either roll back or provide a controlled one-time fallback rather than silently succeed.
+
+> **Email archives containing current credentials are highly sensitive and must be protected by the organization's encrypted mail controls, administrative access restrictions, and retention policy.**
