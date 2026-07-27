@@ -223,6 +223,41 @@ Credential notices are reserved for a later secure mail service and use the
 dedicated `GATEWAY_CREDENTIAL_NOTICE_*` environment settings documented in
 `.env.example`.
 
+## Bootstrap administrator
+
+After both migrations are Ran and the business tables are empty, create the
+first corporate administrator from a controlled server console:
+
+```shell
+php bin/gateway bootstrap:administrator
+```
+
+The command is interactive, displays a password once only after the database
+transaction commits, and can succeed only while `users` has no rows. Gateway
+stores only the password hash; a lost one-time password cannot be recovered.
+Never place a password in shell arguments—the command rejects password options.
+
+Configure `GATEWAY_CREDENTIAL_NOTICE_DRIVER`, recipient email/name, and a
+subject containing `secure` before production bootstrap. No production
+notifier ships in this commit, so production fails closed. Local/testing may
+skip delivery only when `GATEWAY_CREDENTIAL_NOTICE_ALLOW_LOCAL_FALLBACK=true`
+and both `--no-notification` and `--acknowledge-no-notification` are supplied.
+
+Exit codes are: `0` success, `1` validation/general failure, `2` already
+initialized, `3` database failure, `4` administrator committed but notification
+failed, `5` initialization lock unavailable, and `6` unsafe environment or
+prohibited option. A successful bootstrap creates one corporate employee, one
+active user, and immutable initialization/notification audit events. It creates
+no property, assignment, session, login attempt, role, or permission.
+
+Before bootstrap, run:
+
+```shell
+php bin/gateway database:check application
+php bin/gateway migrate:status
+php bin/gateway schema:verify
+```
+
 MySQL DDL may implicitly commit, so the runner does not pretend a batch is fully
 transactional. Rollback depends on every migration providing a correct
 `down()` implementation. Migration files must be committed to Git with the code

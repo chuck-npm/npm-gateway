@@ -129,3 +129,26 @@ Administrator password replacement updates the hash and password timestamps, cle
 Future credential notices use the dedicated `GATEWAY_CREDENTIAL_NOTICE_*` settings and subject `secure - NPM Gateway User Credentials`. The body may include approved employee, account, property, phone, and administrator context, but is never logged. Production mail debugging is disabled. Delivery failure must be reported safely, and provisioning must either roll back or provide a controlled one-time fallback rather than silently succeed.
 
 > **Email archives containing current credentials are highly sensitive and must be protected by the organization's encrypted mail controls, administrative access restrictions, and retention policy.**
+
+## Application ownership and bootstrap administration
+
+Employee creation is owned by `EmployeeService`, user creation by `UserService`,
+and immutable audit creation by `AuditService`. `SystemInitializationService`
+is the sole coordinator for initial-administrator bootstrap and the sole owner
+of its transaction. CLI commands, controllers, imports, jobs, future APIs, and
+AI clients must use these services and never insert business rows directly.
+
+Bootstrap is allowed exactly once: any `users` row, including a disabled one,
+means Gateway is initialized. It creates one active corporate employee and one
+active user with a permanent normalized username. It creates no property or
+property assignment for the corporate administrator and no session or login
+attempt. The generated password is shown once, never stored as plaintext, and
+only its PHP password hash is persisted.
+
+The atomic transaction inserts employee, user, and
+`system.administrator_initialized` audit rows. Credential delivery occurs after
+commit so transport latency or failure cannot leave partial business data.
+Delivery produces an immutable sent, failed, or explicitly skipped-local audit
+event. On failure the administrator remains committed, the operator receives a
+distinct result, and the one-time password must be handled securely. It cannot
+be resent because Gateway intentionally retains no recoverable password.

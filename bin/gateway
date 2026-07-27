@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 use NpmGateway\Console\DatabaseCheckCommand;
 use NpmGateway\Console\MigrationCommand;
+use NpmGateway\Console\BootstrapAdministratorCommand;
+use NpmGateway\Console\StreamConsoleIo;
+use NpmGateway\Container\ServiceProvider;
 use NpmGateway\Database\DatabaseDiagnostic;
 use NpmGateway\Database\DatabaseProfiles;
+use NpmGateway\Services\SystemInitializationService;
 
 $projectRoot = dirname(__DIR__);
 
@@ -21,6 +25,7 @@ $help = implode(PHP_EOL, [
     '  migrate:status',
     '  migrate:rollback',
     '  schema:verify',
+    '  bootstrap:administrator',
 ]) . PHP_EOL;
 
 if ($command === '' || in_array($command, ['help', '--help', '-h'], true)) {
@@ -44,6 +49,20 @@ if ($command === 'database:check') {
     fwrite(STDOUT, $result['stdout']);
     fwrite(STDERR, $result['stderr']);
     exit($result['exit_code']);
+}
+
+if ($command === 'bootstrap:administrator') {
+    $container = ServiceProvider::build($application);
+    try {
+        $bootstrap = new BootstrapAdministratorCommand(
+            $container->get(SystemInitializationService::class),
+            new StreamConsoleIo()
+        );
+        exit($bootstrap->run(array_slice($arguments, 1)));
+    } finally {
+        $connection = $container->get(mysqli::class);
+        $connection->close();
+    }
 }
 
 if (!in_array($command, ['migrate', 'migrate:status', 'migrate:rollback', 'schema:verify'], true)) {
