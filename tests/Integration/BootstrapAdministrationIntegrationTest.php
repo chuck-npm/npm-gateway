@@ -27,6 +27,8 @@ use NpmGateway\Services\DashboardHomeService;
 use NpmGateway\Services\UniversalToolProvider;
 use NpmGateway\Services\CorporateToolsProvider;
 use NpmGateway\Services\CorporateAccessService;
+use NpmGateway\Services\EmployeeDirectoryService;
+use NpmGateway\ValueObjects\EmployeeDirectoryCriteria;
 use NpmGateway\Http\Controllers\DashboardController;
 use NpmGateway\Http\AuthenticatedRequestContext;
 use NpmGateway\Security\CsrfService;
@@ -166,7 +168,8 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
                 self::assertSame('Corporate Administrator',$home->jobTitle);
                 self::assertCount(12,$home->universalTools);
                 self::assertCount(4,$home->corporateTools);
-                foreach($home->universalTools as $tool){self::assertFalse($tool->enabled);self::assertNull($tool->route);}
+                self::assertCount(1,array_filter($home->universalTools,static fn($tool):bool=>$tool->enabled));self::assertTrue($home->universalTools[0]->enabled);self::assertSame('/employees',$home->universalTools[0]->route);
+                foreach(array_slice($home->universalTools,1) as $tool){self::assertFalse($tool->enabled);self::assertNull($tool->route);}
                 foreach($home->corporateTools as $tool){self::assertFalse($tool->enabled);self::assertNull($tool->route);}
                 $csrfState=[];$response=(new DashboardController(new CsrfService($csrfState),new DashboardHomeService($dashboard,new UniversalToolProvider(),new CorporateToolsProvider(),$corporateAccess),$application['root'].'/resources/views'))->index(new AuthenticatedRequestContext($login->user,$login->session->reveal()));
                 self::assertSame(200,$response->status);self::assertStringContainsString('Corporate Tools',$response->body);self::assertStringContainsString('aria-label="Corporate tools menu"',$response->body);self::assertSame(4,substr_count($response->body,'gateway-navbar__disabled-item'));self::assertStringNotContainsString('href="#"',$response->body);
@@ -178,7 +181,7 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
                 ]);
                 $propertyId = $ids->generate();
                 $property = $connection->prepare("INSERT INTO properties (public_id,property_code,slug,display_name,status,manager_email,ivr_number,address_line_1,city,state,postal_code,timezone) VALUES (?,'IT','integration-test','Integration Test Property','active','manager@integration.example.test','+1555010199','1 Test Way','Testville','OH','43000','America/New_York')");
-                $property->bind_param('s',$propertyId);$property->execute();$property->close();
+                $property->bind_param('s',$propertyId);$property->execute();$propertyDatabaseId=$connection->insert_id;$property->close();
                 $configuredSummary = $dashboard->forUser($login->user);
                 self::assertSame(1, $configuredSummary->propertyCount);
                 self::assertFalse($configuredSummary->initialSetup);
@@ -218,8 +221,24 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
                 self::assertCount(12,$managerHome->universalTools);self::assertCount(4,$managerHome->corporateTools);
                 $managerCsrf=[];$managerResponse=(new DashboardController(new CsrfService($managerCsrf),new DashboardHomeService($dashboard,new UniversalToolProvider(),new CorporateToolsProvider(),$corporateAccess),$application['root'].'/resources/views'))->index(new AuthenticatedRequestContext($managerLogin->user,$managerLogin->session->reveal()));
                 self::assertStringContainsString('Universal Tools',$managerResponse->body);self::assertStringContainsString('Corporate Tools',$managerResponse->body);self::assertStringContainsString('Corporate tools menu',$managerResponse->body);
+                $maintenancePublicId=$ids->generate();$maintenanceEmployee=$connection->prepare("INSERT INTO employees (public_id,employee_number,employee_class,first_name,last_name,business_email,personal_email,company_phone,personal_phone,job_title,employment_status,hire_date) VALUES (?,'NPM999996','maintenance','Integration','Maintenance',NULL,'private@example.test',NULL,'+1555010101','Maintenance Technician','active','2026-07-28')");
+                $maintenanceEmployee->bind_param('s',$maintenancePublicId);$maintenanceEmployee->execute();$maintenanceEmployeeId=$connection->insert_id;$maintenanceEmployee->close();
+                foreach([[$managerEmployeeId,'property_manager',1],[$maintenanceEmployeeId,'maintenance',1]] as [$employeeId,$assignmentType,$primary]){
+                    $assignmentPublicId=$ids->generate();$assignment=$connection->prepare("INSERT INTO employee_property_assignments (public_id,employee_id,property_id,assignment_type,is_primary,starts_on) VALUES (?,?,?,?,?,'2026-07-28')");
+                    $assignment->bind_param('siisi',$assignmentPublicId,$employeeId,$propertyDatabaseId,$assignmentType,$primary);$assignment->execute();$assignment->close();
+                }
+                $directory=new EmployeeDirectoryService(new EmployeeRepository($connection));$beforeReads=['employees'=>self::rowCount($connection,'employees'),'users'=>self::rowCount($connection,'users'),'assignments'=>self::rowCount($connection,'employee_property_assignments'),'audit_logs'=>self::rowCount($connection,'audit_logs')];
+                $allEmployees=$directory->search(new EmployeeDirectoryCriteria());self::assertSame(3,$allEmployees->totalResults);
+                $byNumber=$directory->search(new EmployeeDirectoryCriteria('NPM999996'));self::assertSame(1,$byNumber->totalResults);self::assertSame('None',$byNumber->employees[0]->gatewayAccessStatus);
+                $byName=$directory->search(new EmployeeDirectoryCriteria('Integration Manager'));self::assertSame(1,$byName->totalResults);self::assertSame('Active',$byName->employees[0]->gatewayAccessStatus);self::assertSame('Integration Test Property',$byName->employees[0]->primaryPropertyName);
+                $byProperty=$directory->search(new EmployeeDirectoryCriteria('Integration Test Property'));self::assertSame(2,$byProperty->totalResults);
+                $maintenance=$directory->search(new EmployeeDirectoryCriteria('','maintenance'));self::assertSame(1,$maintenance->totalResults);self::assertSame('None',$maintenance->employees[0]->gatewayAccessStatus);
+                $administratorProfile=$directory->getProfile($login->user->employeePublicId);self::assertSame([],$administratorProfile->assignments);self::assertSame('Active',$administratorProfile->gatewayAccessStatus);
+                $maintenanceProfile=$directory->getProfile($maintenancePublicId);self::assertCount(1,$maintenanceProfile->assignments);self::assertNull($maintenanceProfile->businessEmail);self::assertNull($maintenanceProfile->companyPhone);
+                self::assertSame($beforeReads,['employees'=>self::rowCount($connection,'employees'),'users'=>self::rowCount($connection,'users'),'assignments'=>self::rowCount($connection,'employee_property_assignments'),'audit_logs'=>self::rowCount($connection,'audit_logs')]);
             } finally {
             if ($connection instanceof mysqli) {
+                $connection->query('DELETE FROM employee_property_assignments');
                 $connection->query('DELETE FROM properties');
                 $connection->query('DELETE FROM audit_logs');
                 $connection->query('DELETE FROM login_attempts');

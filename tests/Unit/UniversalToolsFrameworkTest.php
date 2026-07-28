@@ -16,16 +16,16 @@ final class UniversalToolsFrameworkTest extends TestCase
     {
         $disabled=new ToolCard('valid-key','Title','Description','Category','Planned',null,false,10);
         self::assertFalse($disabled->enabled);self::assertTrue((new ReflectionClass($disabled))->isReadOnly());
-        $enabled=new ToolCard('real-tool','Real tool','Description','Category','Open tool','/real-tool',true,20,null,'Open real tool');
+        $enabled=new ToolCard('real-tool','Real tool','Description','Category','Open tool','/real-tool',true,20,null,'Open real tool','real-tool.index');
         self::assertSame('/real-tool',$enabled->route);
         foreach([
             fn()=>new ToolCard('Bad Key','Title','Description','Category','Planned',null,false,1),
             fn()=>new ToolCard('missing-title','','Description','Category','Planned',null,false,1),
             fn()=>new ToolCard('missing-description','Title','','Category','Planned',null,false,1),
-            fn()=>new ToolCard('enabled-no-route','Title','Description','Category','Open',null,true,1),
+            fn()=>new ToolCard('enabled-no-route','Title','Description','Category','Open',null,true,1,null,null,'tool.index'),
             fn()=>new ToolCard('disabled-route','Title','Description','Category','Planned','/route',false,1),
-            fn()=>new ToolCard('external','Title','Description','Category','Open','https://example.com',true,1),
-            fn()=>new ToolCard('javascript','Title','Description','Category','Open','javascript:alert(1)',true,1),
+            fn()=>new ToolCard('external','Title','Description','Category','Open','https://example.com',true,1,null,null,'tool.index'),
+            fn()=>new ToolCard('javascript','Title','Description','Category','Open','javascript:alert(1)',true,1,null,null,'tool.index'),
         ] as $invalid){try{$invalid();self::fail('Expected invalid card.');}catch(InvalidArgumentException){}}
     }
     public function testProviderReturnsApprovedDeterministicCatalogWithoutDestinations():void
@@ -34,7 +34,8 @@ final class UniversalToolsFrameworkTest extends TestCase
         self::assertCount(12,$first);self::assertEquals($first,$second);
         $keys=array_map(fn(ToolCard $card)=>$card->key,$first);
         self::assertCount(12,array_unique($keys));self::assertSame(['employee-directory','property-information','company-documents','announcements','credit-card-purchases','large-file-transfers','order-supplies','time-off-requests','policies-procedures','training-library','support-requests','help-desk'],$keys);
-        foreach($first as $index=>$card){self::assertFalse($card->enabled);self::assertNull($card->route);self::assertNotSame('',$card->title);self::assertNotSame('',$card->description);self::assertNotSame('',$card->categoryLabel);self::assertSame(($index+1)*10,$card->sortOrder);}
+        foreach($first as $index=>$card){if($index===0){self::assertTrue($card->enabled);self::assertSame('/employees',$card->route);self::assertSame('employees.index',$card->routeName);self::assertSame('Open directory',$card->footerLabel);}else{self::assertFalse($card->enabled);self::assertNull($card->route);self::assertNull($card->routeName);}self::assertNotSame('',$card->title);self::assertNotSame('',$card->description);self::assertNotSame('',$card->categoryLabel);self::assertSame(($index+1)*10,$card->sortOrder);}
+        self::assertCount(1,array_filter($first,fn(ToolCard $card)=>$card->enabled));
         self::assertCount(0,(new ReflectionClass($provider))->getConstructor()?->getParameters()??[]);
     }
     public function testHomeUsesAuthenticatedEmployeeContextAndTruthfulSummary():void

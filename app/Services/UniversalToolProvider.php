@@ -21,6 +21,8 @@ final class UniversalToolProvider implements UniversalToolProviderInterface
             ['support-requests','Support Requests','Request operational assistance from corporate staff.','Operations Support'],
             ['help-desk','Help Desk','Report a Gateway or technology issue.','Technical Support'],
         ];
-        return array_map(static fn(array $tool,int $index):ToolCard=>new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Not yet enabled',null,false,($index+1)*10,'Planned'),$definitions,array_keys($definitions));
+        return array_map(static fn(array $tool,int $index):ToolCard=>$tool[0]==='employee-directory'
+            ?new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Open directory','/employees',true,($index+1)*10,null,'Open Employee Directory','employees.index')
+            :new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Not yet enabled',null,false,($index+1)*10,'Planned'),$definitions,array_keys($definitions));
     }
 }

@@ -15,6 +15,7 @@ final readonly class ToolCard
         public int $sortOrder,
         public ?string $badgeLabel = null,
         public ?string $accessibilityLabel = null,
+        public ?string $routeName = null,
     ) {
         if (preg_match('/^[a-z][a-z0-9-]*$/', $key) !== 1) throw new InvalidArgumentException('Tool key must be stable and machine-safe.');
         foreach (['title'=>$title,'description'=>$description,'category'=>$categoryLabel,'footer'=>$footerLabel] as $field=>$value) {
@@ -23,5 +24,7 @@ final readonly class ToolCard
         if ($sortOrder < 0) throw new InvalidArgumentException('Tool sort order must be non-negative.');
         if ($enabled && ($route === null || preg_match('#^/[a-z0-9][a-z0-9/-]*$#', $route) !== 1)) throw new InvalidArgumentException('Enabled tools require an approved internal route.');
         if (!$enabled && $route !== null) throw new InvalidArgumentException('Disabled tools cannot expose a destination.');
+        if ($enabled && ($routeName===null||preg_match('/^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$/',$routeName)!==1)) throw new InvalidArgumentException('Enabled tools require an approved internal route name.');
+        if (!$enabled && $routeName!==null) throw new InvalidArgumentException('Disabled tools cannot expose a route name.');
     }
 }

@@ -27,7 +27,8 @@ final class DashboardFoundationTest extends TestCase
  {
   $html=$this->render(0);
   foreach(['href="#main-content"','id="main-content"','aria-label="Primary navigation"','aria-current="page"','data-bs-toggle="collapse"','NPM Gateway','Test Administrator','Sysadmin','method="post" action="/logout"'] as $expected)self::assertStringContainsString($expected,$html);
-  foreach(['href="/properties"','href="/employees"','href="/users"','sidebar','Lorem Ipsum','Recent Activity','chart','TEST-session-secret','href="#"'] as $forbidden)self::assertStringNotContainsString($forbidden,$html);
+  foreach(['href="/properties"','href="/users"','sidebar','Lorem Ipsum','Recent Activity','chart','TEST-session-secret','href="#"'] as $forbidden)self::assertStringNotContainsString($forbidden,$html);
+  self::assertStringContainsString('href="/employees"',$html);
  }
  public function testInitialAndNormalStatesRemainTruthful():void
  {

@@ -365,3 +365,23 @@ filtering; final module authorization still belongs in application services
 and middleware. During manual validation,
 confirm the section order, four disabled cards, disabled dropdown entries, and
 mobile navbar behavior at 320, 768, 1280, and 1920 pixels.
+
+## Employee Workspace
+
+The Employee Directory card is Gateway's first enabled Universal Tool. Every
+authenticated user may open the read-only workspace at `/employees` and
+approved profiles at `/employees/{publicId}`. Server-side GET criteria provide
+bounded search, class/status filters, whitelisted sorting, and pagination.
+
+Only approved operational fields are presented: employee number, name, title,
+class, status, business contact information, current assignment summary, and
+Gateway access status. Personal contact data, database IDs, passwords,
+authentication internals, historical assignments, and HR-only information are
+excluded. Gateway access is Active, Inactive, or None from the linked user; it
+is never inferred from class. Employees, including maintenance employees, may
+correctly have no Gateway user.
+
+Directory read access grants no write permission. No create, edit, disable,
+import, or export routes exist. For manual validation, search by name and
+employee number, apply and clear filters, open a public-ID profile, and repeat
+at 320, 768, 1280, and 1920 pixels.

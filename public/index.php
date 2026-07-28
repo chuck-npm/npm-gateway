@@ -13,6 +13,11 @@ use NpmGateway\Security\CsrfService;
 use NpmGateway\Services\AuthenticationService;
 use NpmGateway\Services\SessionService;
 use NpmGateway\Services\DashboardHomeService;
+use NpmGateway\Http\Controllers\EmployeeWorkspaceController;
+use NpmGateway\Services\EmployeeDirectoryCriteriaFactory;
+use NpmGateway\Services\EmployeeDirectoryService;
+use NpmGateway\Services\CorporateAccessService;
+use NpmGateway\Contracts\CorporateToolsProviderInterface;
 
 $application=require dirname(__DIR__).'/bootstrap/app.php';$root=$application['root'];$environment=(string)$application['config']['app']['environment'];
 $path=parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH);$path=is_string($path)?rtrim($path,'/'):'/';$path=$path===''?'/':$path;
@@ -28,8 +33,9 @@ if(!preg_match('/^[A-Za-z][A-Za-z0-9_-]{1,63}$/',$nativeSessionName)||hash_equal
 if(session_status()!==PHP_SESSION_ACTIVE){ini_set('session.use_strict_mode','1');ini_set('session.use_only_cookies','1');session_name($nativeSessionName);session_set_cookie_params(['lifetime'=>0,'path'=>'/','secure'=>$authConfig->secure,'httponly'=>true,'samesite'=>$authConfig->sameSite]);session_start();}
 $csrf=new CsrfService($_SESSION);$cookie=new SessionCookie($authConfig);$views=$root.'/resources/views';
 $authentication=new AuthenticationController($container->get(AuthenticationService::class),$container->get(SessionService::class),$cookie,$csrf,$views);
-$kernel=new WebKernel($authentication,new DashboardController($csrf,$container->get(DashboardHomeService::class),$views),new RequireAuthenticationMiddleware($container->get(SessionService::class),$cookie));
-$request=new Request(strtoupper((string)($_SERVER['REQUEST_METHOD']??'GET')),$path,array_map('strval',$_POST),array_map('strval',$_COOKIE),array_map('strval',$_SERVER));
+$employees=new EmployeeWorkspaceController($container->get(EmployeeDirectoryCriteriaFactory::class),$container->get(EmployeeDirectoryService::class),$container->get(CorporateAccessService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,$views);
+$kernel=new WebKernel($authentication,new DashboardController($csrf,$container->get(DashboardHomeService::class),$views),new RequireAuthenticationMiddleware($container->get(SessionService::class),$cookie),$employees);
+$request=new Request(strtoupper((string)($_SERVER['REQUEST_METHOD']??'GET')),$path,array_map('strval',$_POST),array_map('strval',$_COOKIE),array_map('strval',$_SERVER),array_map('strval',$_GET));
 $response=$kernel->handle($request,$container->get(ClockInterface::class)->now());http_response_code($response->status);
 foreach($response->headers as $name=>$value)header($name.': '.$value);
 foreach($response->cookies as $definition){$name=$definition['name'];$value=$definition['value'];unset($definition['name'],$definition['value']);setcookie($name,$value,$definition);}

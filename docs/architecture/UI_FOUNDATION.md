@@ -58,3 +58,16 @@ dropdown behavior. Unavailable areas render as non-focusable text with a
 visible `Planned` status—never as anchors, routes, buttons, or JavaScript
 actions. The dropdown remains inside the collapsible mobile navigation and the
 user menu remains separate. No sidebar is introduced.
+
+## Read-only workspace pattern
+
+A workspace uses breadcrumbs, one semantic page heading, a GET-only directory
+toolbar, truthful result count, responsive results, bounded pagination, and a
+read-only public-ID profile. Empty datasets and filtered zero-results use
+distinct messages and only real Clear filters links.
+
+Directories use a responsive table with controlled local overflow. Profiles
+use a compact header, textual badges, approved-information cards, and current
+assignments. Missing information is stated explicitly. Read-only modules do
+not display disabled Add, Edit, Delete, Import, or Export controls and do not
+ship employee datasets to client-side JavaScript.

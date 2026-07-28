@@ -58,3 +58,10 @@ use most often. Presentation visibility is not final module authorization and
 must never be treated as proof of access by a client. Final authorization must
 be enforced by approved services or middleware. Disabled capabilities remain
 truthful, non-interactive, and destination-free.
+
+The employee directory is operational, not a full HR record, and follows
+least-information presentation. Employee and Gateway user identities remain
+separate: every Gateway user has an employee, not every employee has a user,
+and maintenance employees do not receive Gateway users. Read access never
+implies write access. Business-object URLs use stable public identifiers, and
+routine directory/profile reads do not create permanent audit noise.
