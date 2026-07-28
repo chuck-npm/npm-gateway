@@ -49,7 +49,7 @@ final class UniversalToolsFrameworkTest extends TestCase
     public function testArchitectureKeepsDefinitionsOutOfControllerAndViews():void
     {
         $root=dirname(__DIR__,2);$controller=file_get_contents($root.'/app/Http/Controllers/DashboardController.php');$provider=file_get_contents($root.'/app/Services/UniversalToolProvider.php');
-        self::assertStringNotContainsString('Employee Directory',$controller);self::assertStringNotContainsString('Employee Directory',file_get_contents($root.'/resources/views/dashboard.php'));
+        self::assertStringNotContainsString('Company Directory',$controller);self::assertStringNotContainsString('Company Directory',file_get_contents($root.'/resources/views/dashboard.php'));
         self::assertDoesNotMatchRegularExpression('/\\b(?:SELECT|INSERT|UPDATE|DELETE)\\b/i',$provider);self::assertStringNotContainsString('Repositories\\',$provider);
         self::assertFileDoesNotExist($root.'/database/migrations/202607270003_universal_tools.php');
     }

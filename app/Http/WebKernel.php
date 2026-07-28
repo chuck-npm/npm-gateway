@@ -15,7 +15,6 @@ final class WebKernel
   if($request->path==='/login'&&$request->method==='POST')return $this->authentication->login($request,$now);
   if($request->path==='/dashboard'&&$request->method==='GET')return $this->middleware->handle($request,fn(AuthenticatedRequestContext $c):Response=>$this->dashboard->index($c),$now);
   if($request->path==='/employees'&&$request->method==='GET'&&$this->employees!==null)return $this->middleware->handle($request,fn(AuthenticatedRequestContext $c):Response=>$this->employees->index($request,$c),$now);
-  if($request->method==='GET'&&$this->employees!==null&&preg_match('#^/employees/([^/]+)$#',$request->path,$match)===1)return $this->middleware->handle($request,fn(AuthenticatedRequestContext $c):Response=>$this->employees->show($match[1],$c),$now);
   if($request->path==='/logout'&&$request->method==='GET')return new Response(405,'Method Not Allowed',['Allow'=>'POST']);
   if($request->path==='/logout'&&$request->method==='POST')return $this->middleware->handle($request,fn(AuthenticatedRequestContext $c):Response=>$this->authentication->logout($request,$c->rawToken,$now),$now);
   return new Response(404,'Not Found');

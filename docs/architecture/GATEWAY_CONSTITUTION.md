@@ -64,4 +64,28 @@ least-information presentation. Employee and Gateway user identities remain
 separate: every Gateway user has an employee, not every employee has a user,
 and maintenance employees do not receive Gateway users. Read access never
 implies write access. Business-object URLs use stable public identifiers, and
-routine directory/profile reads do not create permanent audit noise.
+routine directory reads do not create permanent audit noise.
+
+Company Directory visibility is universal for authenticated Gateway users and
+is never filtered by corporate access, class, title, assignment, context, or
+username. It exposes approved directory information only.
+
+Company Directory means universal approved contact information. Complete
+employee records belong to the separately restricted Human Resources domain.
+Universal directory access never exposes an employee-detail route, employment
+history, detailed assignments, personnel documents, private notes, or HR
+administration.
+
+Future employee creation ownership is explicit: corporate-authorized users
+create corporate staff, managers, and assistant managers; managers and
+assistant managers create maintenance employees in approved contexts.
+Managers and assistant managers automatically receive Gateway users;
+maintenance employees never do. Maintenance creation triggers approved
+corporate contact notification. Transfers preserve the employee and close/open
+assignments rather than duplicating identity.
+
+Employee numbers are Gateway-generated, permanent, never reused, and formatted
+`NPM######`. Generation must be concurrency-safe using a bounded advisory lock,
+transaction, uniqueness recheck, and safe exhaustion at `NPM999999`; unlocked
+`MAX + 1` allocation is forbidden. Employee photographs are not part of the
+Gateway employee domain.

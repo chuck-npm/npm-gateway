@@ -39,7 +39,20 @@ Retained corporate, manager/assistant-manager, and maintenance history. Employee
 
 Unique indexes: public ID, employee number, nullable business email. Other indexes: name, class/status, supervisor, hire date. Checks: number, class, status, lowercase emails, valid termination order. Foreign keys: supervisor self-reference and user audit actors, all RESTRICT.
 
-The application supplies and never reuses employee numbers; no trigger or `MAX()` derivation is permitted. Maintenance employees cannot have users or company phones. Managers and assistant managers are expected to have company phones; corporate staff may have them. Manager working email normally derives from the active primary property's manager mailbox.
+The application generates and never reuses employee numbers. Future allocation
+uses a bounded MySQL advisory lock and employee-creation transaction, reads the
+highest recorded six-digit suffix, rechecks uniqueness, inserts, and releases
+the lock in `finally`. An unlocked `MAX() + 1` operation is prohibited, and
+`NPM999999` exhaustion fails safely pending an approved policy revision.
+Maintenance employees cannot have users or company phones. Managers and
+assistant managers automatically receive Gateway users and are expected to
+have company phones; corporate staff may have them. Manager working email
+normally derives from the active primary property's manager mailbox.
+
+The universal Company Directory exposes only approved contact and operational
+summary fields. Complete employee records, dates, history, detailed
+assignments, notes, documents, and personnel workflows belong to restricted
+Human Resources services and are not exposed through a universal detail route.
 
 ## `users`
 

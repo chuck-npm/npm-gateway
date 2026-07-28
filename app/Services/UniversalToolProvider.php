@@ -8,7 +8,7 @@ final class UniversalToolProvider implements UniversalToolProviderInterface
     public function tools(): array
     {
         $definitions=[
-            ['employee-directory','Employee Directory','Find company employees and approved contact information.','People & Contacts'],
+            ['employee-directory','Company Directory','Find employees and approved company contact information.','People & Contacts'],
             ['property-information','Property Information','View community addresses, contacts, websites, and operational details.','Communities'],
             ['company-documents','Company Documents','Access company forms, manuals, policies, and shared documents.','Documents'],
             ['announcements','Announcements','Review company-wide updates and important notices.','Communications'],
@@ -22,7 +22,7 @@ final class UniversalToolProvider implements UniversalToolProviderInterface
             ['help-desk','Help Desk','Report a Gateway or technology issue.','Technical Support'],
         ];
         return array_map(static fn(array $tool,int $index):ToolCard=>$tool[0]==='employee-directory'
-            ?new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Open directory','/employees',true,($index+1)*10,null,'Open Employee Directory','employees.index')
+            ?new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Open directory','/employees',true,($index+1)*10,null,'Open Company Directory','employees.index')
             :new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Not yet enabled',null,false,($index+1)*10,'Planned'),$definitions,array_keys($definitions));
     }
 }

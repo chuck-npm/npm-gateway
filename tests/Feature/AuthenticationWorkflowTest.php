@@ -23,7 +23,6 @@ use NpmGateway\Services\EmployeeDirectoryCriteriaFactory;
 use NpmGateway\Services\EmployeeDirectoryService;
 use NpmGateway\Contracts\EmployeeDirectoryStoreInterface;
 use NpmGateway\ValueObjects\EmployeeDirectoryCriteria;
-use NpmGateway\ValueObjects\EmployeeDirectoryProfile;
 use NpmGateway\ValueObjects\AuthenticatedUser;
 use NpmGateway\ValueObjects\AuthenticationResult;
 use NpmGateway\ValueObjects\ClientContext;
@@ -49,9 +48,8 @@ final class AuthenticationWorkflowTest extends TestCase
  public function testEmployeeWorkspaceRoutesRequireAuthenticationAndRenderReadOnlyViews():void
  {
   $guest=$this->kernel->handle(new Request('GET','/employees'),$this->now());self::assertSame('/login',$guest->headers['Location']);
-  $cookies=['npm_gateway_session'=>str_repeat('s',43)];$index=$this->kernel->handle(new Request('GET','/employees',[],$cookies,[],['search'=>'Test']),$this->now());self::assertSame(200,$index->status);self::assertStringContainsString('Employee Workspace',$index->body);
-  $show=$this->kernel->handle(new Request('GET','/employees/'.str_repeat('A',26),[],$cookies),$this->now());self::assertSame(200,$show->status);self::assertStringContainsString('Test Employee',$show->body);
-  self::assertSame(404,$this->kernel->handle(new Request('GET','/employees/17',[],$cookies),$this->now())->status);
+  $cookies=['npm_gateway_session'=>str_repeat('s',43)];$index=$this->kernel->handle(new Request('GET','/employees',[],$cookies,[],['search'=>'Test']),$this->now());self::assertSame(200,$index->status);self::assertStringContainsString('Company Directory',$index->body);self::assertStringNotContainsString('Employee Workspace',$index->body);
+  self::assertSame(404,$this->kernel->handle(new Request('GET','/employees/'.str_repeat('A',26),[],$cookies),$this->now())->status);
  }
  private function loginRequest(string $password):Request{return new Request('POST','/login',['_token'=>$this->state['csrf'],'username'=>'admin','password'=>$password],[],['REMOTE_ADDR'=>'192.0.2.1']);}
  private function now():DateTimeImmutable{return new DateTimeImmutable('2026-07-28 10:00:00');}
@@ -76,5 +74,4 @@ final class FakeFeatureEmployeeDirectoryStore implements EmployeeDirectoryStoreI
 {
  public function searchDirectory(EmployeeDirectoryCriteria $criteria):array{return [['employee_public_id'=>str_repeat('A',26),'employee_number'=>'NPM000001','display_name'=>'Test Employee','job_title'=>'Tester','employee_class'=>'manager','employment_status'=>'active','business_email'=>null,'company_phone'=>null,'primary_property_name'=>'Not assigned','gateway_access_status'=>'Active']];}
  public function countDirectoryResults(EmployeeDirectoryCriteria $criteria):int{return 1;}
- public function findDirectoryProfileByPublicId(string $publicId):?EmployeeDirectoryProfile{return $publicId===str_repeat('A',26)?new EmployeeDirectoryProfile($publicId,'NPM000001','Test Employee','Tester','manager','active',null,null,'Active',[]):null;}
 }

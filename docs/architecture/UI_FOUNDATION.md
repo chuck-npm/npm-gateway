@@ -62,12 +62,26 @@ user menu remains separate. No sidebar is introduced.
 ## Read-only workspace pattern
 
 A workspace uses breadcrumbs, one semantic page heading, a GET-only directory
-toolbar, truthful result count, responsive results, bounded pagination, and a
-read-only public-ID profile. Empty datasets and filtered zero-results use
+toolbar, truthful result count, responsive results, and bounded pagination.
+Empty datasets and filtered zero-results use
 distinct messages and only real Clear filters links.
 
-Directories use a responsive table with controlled local overflow. Profiles
-use a compact header, textual badges, approved-information cards, and current
-assignments. Missing information is stated explicitly. Read-only modules do
+Directories use a responsive table with controlled local overflow. Missing
+information is stated explicitly. Read-only modules do
 not display disabled Add, Edit, Delete, Import, or Export controls and do not
 ship employee datasets to client-side JavaScript.
+
+The Company Directory is search-first: a prominent employee-name search
+precedes secondary class, status, and sorting controls. Result information is
+ordered around name, title, operational context, company phone, business
+email, class, status, and Gateway access. `Not provided` is used for absent
+company contact data without falling back to personal information.
+
+On narrow screens, directory table rows become labeled employee cards rather
+than compressed columns. The universal directory has no profile/detail
+interaction. No photographs, avatars, image placeholders, or photo
+dependencies are used.
+
+Company Directory presents universal approved contact information. Restricted
+complete employee records and detail workflows belong to the future Human
+Resources module and are not linked from the directory.

@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 use NpmGateway\Contracts\EmployeeDirectoryStoreInterface;
-use NpmGateway\Exceptions\Domain\EmployeeNotFoundException;
 use NpmGateway\Http\AuthenticatedRequestContext;
 use NpmGateway\Http\Controllers\EmployeeWorkspaceController;
 use NpmGateway\Http\Request;
@@ -12,8 +11,6 @@ use NpmGateway\Services\EmployeeDirectoryCriteriaFactory;
 use NpmGateway\Services\EmployeeDirectoryService;
 use NpmGateway\ValueObjects\AuthenticatedUser;
 use NpmGateway\ValueObjects\EmployeeDirectoryCriteria;
-use NpmGateway\ValueObjects\EmployeeDirectoryProfile;
-use NpmGateway\ValueObjects\EmployeeAssignment;
 use PHPUnit\Framework\TestCase;
 final class EmployeeWorkspaceTest extends TestCase
 {
@@ -26,23 +23,20 @@ final class EmployeeWorkspaceTest extends TestCase
         $safe=$factory->fromQuery(['class'=>'admin','status'=>'terminated','sort'=>'password_hash','direction'=>'sideways','page'=>'-9','per_page'=>'1000']);
         self::assertSame(['all','all','name','asc',1,25],[$safe->employeeClass,$safe->employmentStatus,$safe->sort,$safe->direction,$safe->page,$safe->perPage]);self::assertTrue((new ReflectionClass($safe))->isReadOnly());
     }
-    public function testServiceReturnsTypedPrivacyBoundedResultsAndControlledNotFound():void
+    public function testServiceReturnsTypedPrivacyBoundedDirectoryResults():void
     {
         $store=new FakeEmployeeDirectoryStore();$service=new EmployeeDirectoryService($store);$page=$service->search(new EmployeeDirectoryCriteria());
         self::assertSame(1,$page->totalResults);self::assertCount(1,$page->employees);self::assertSame('Active',$page->employees[0]->gatewayAccessStatus);self::assertTrue((new ReflectionClass($page))->isReadOnly());
-        $profile=$service->getProfile(str_repeat('A',26));self::assertSame('None',$profile->gatewayAccessStatus);self::assertCount(0,$profile->assignments);
-        foreach(['personalEmail','personalPhone','passwordHash','sessionToken','id'] as $field){self::assertFalse(property_exists($page->employees[0],$field));self::assertFalse(property_exists($profile,$field));}
-        $this->expectException(EmployeeNotFoundException::class);$service->getProfile(str_repeat('B',26));
+        foreach(['personalEmail','personalPhone','passwordHash','sessionToken','id','startsOn','assignments'] as $field)self::assertFalse(property_exists($page->employees[0],$field));
     }
     public function testControllerRendersApprovedReadOnlyWorkspaceAndProfile():void
     {
         $state=[];$controller=$this->controller($state);$context=new AuthenticatedRequestContext($this->user(),'TEST-token');
         $index=$controller->index(new Request('GET','/employees',[],[],[],['search'=>'Test']),$context);
         self::assertSame(200,$index->status);
-        foreach(['Employee Workspace','method="get" action="/employees"','Employee Number','Gateway Access','NPM000001','View Test Employee','method="post" action="/logout"'] as $expected)self::assertStringContainsString($expected,$index->body);
-        foreach(['personal_email','personal phone','password_hash','Add Employee','Edit Employee','Delete','Export Employees','TEST-token'] as $forbidden)self::assertStringNotContainsString($forbidden,$index->body);
-        $show=$controller->show(str_repeat('A',26),$context);self::assertSame(200,$show->status);self::assertStringContainsString('Company Contact',$show->body);self::assertStringContainsString('Not assigned to a property',$show->body);self::assertStringContainsString('Back to Employee Workspace',$show->body);
-        self::assertSame(404,$controller->show('17',$context)->status);self::assertSame(404,$controller->show(str_repeat('B',26),$context)->status);
+        foreach(['Company Directory','Find employee contact information quickly.','placeholder="Enter an employee name"','method="get" action="/employees"','Operational Context','Company Phone','Business Email','Gateway Access','work@example.test','+1555010100','method="post" action="/logout"'] as $expected)self::assertStringContainsString($expected,$index->body);
+        self::assertLessThan(strpos($index->body,'id="employee-class"'),strpos($index->body,'id="employee-search"'));
+        foreach(['Employee Workspace','NPM000001','personal_email','personal phone','password_hash','Add Employee','Edit Employee','Delete','Export Employees','<img','avatar','TEST-token','>View<','data-label="Action"'] as $forbidden)self::assertStringNotContainsString($forbidden,$index->body);
     }
     public function testArchitectureHasNoWritesPrivateFieldsOrSqlOutsideRepository():void
     {
@@ -52,7 +46,15 @@ final class EmployeeWorkspaceTest extends TestCase
         $directorySource=substr($repository,(int)strpos($repository,'public function searchDirectory'));foreach(['personal_email','personal_phone','password_hash','failed_login_count','user_sessions'] as $private)self::assertStringNotContainsString($private,$directorySource);
         self::assertStringContainsString('prepare(',$repository);self::assertStringContainsString('$orders=[',$repository);
         $routes=file_get_contents($root.'/app/Http/WebKernel.php');foreach(["method==='POST'&&preg_match('#^/employees","method==='PUT'","method==='PATCH'","method==='DELETE'"] as $write)self::assertStringNotContainsString($write,$routes);
+        self::assertStringNotContainsString('/employees/{publicId}',file_get_contents($root.'/routes/web.php'));self::assertStringNotContainsString('function show(',$controller);
+        self::assertFileDoesNotExist($root.'/resources/views/employees/show.php');self::assertFileDoesNotExist($root.'/app/ValueObjects/EmployeeDirectoryProfile.php');self::assertFileDoesNotExist($root.'/app/Exceptions/Domain/EmployeeNotFoundException.php');
         self::assertFileDoesNotExist($root.'/database/migrations/202607270003_employee_workspace.php');
+    }
+    public function testConfirmedFutureRulesAreDocumentedWithoutImplementation():void
+    {
+        $root=dirname(__DIR__,2);$documentation=file_get_contents($root.'/README.md').file_get_contents($root.'/docs/architecture/GATEWAY_CONSTITUTION.md').file_get_contents($root.'/docs/data-dictionary.md');
+        foreach(['NPM######','NPM999999','advisory lock','never reused','automatically receive Gateway','maintenance employees never','Transfers','assignments','Corporate is a valid future operational context','Employee photos'] as $rule)self::assertStringContainsStringIgnoringCase($rule,$documentation);
+        $application=implode('',array_map('file_get_contents',glob($root.'/app/**/*.php')?:[]));self::assertStringNotContainsString('SELECT MAX',$application);self::assertStringNotContainsString('profile_photo',$application);
     }
     /** @param array<string,mixed> $state */
     private function controller(array &$state):EmployeeWorkspaceController
@@ -63,7 +65,6 @@ final class EmployeeWorkspaceTest extends TestCase
 }
 final class FakeEmployeeDirectoryStore implements EmployeeDirectoryStoreInterface
 {
-    public function searchDirectory(EmployeeDirectoryCriteria $criteria):array{return [['employee_public_id'=>str_repeat('A',26),'employee_number'=>'NPM000001','display_name'=>'Test Employee','job_title'=>'Tester','employee_class'=>'manager','employment_status'=>'active','business_email'=>'work@example.test','company_phone'=>null,'primary_property_name'=>'Not assigned','gateway_access_status'=>'Active']];}
+    public function searchDirectory(EmployeeDirectoryCriteria $criteria):array{return [['employee_public_id'=>str_repeat('A',26),'employee_number'=>'NPM000001','display_name'=>'Test Employee','job_title'=>'Tester','employee_class'=>'manager','employment_status'=>'active','business_email'=>'work@example.test','company_phone'=>'+1555010100','primary_property_name'=>'Not assigned','gateway_access_status'=>'Active']];}
     public function countDirectoryResults(EmployeeDirectoryCriteria $criteria):int{return 1;}
-    public function findDirectoryProfileByPublicId(string $publicId):?EmployeeDirectoryProfile{return $publicId===str_repeat('A',26)?new EmployeeDirectoryProfile($publicId,'NPM000001','Test Employee','Tester','maintenance','active',null,null,'None',[]):null;}
 }

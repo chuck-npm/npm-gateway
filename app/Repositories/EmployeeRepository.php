@@ -4,9 +4,7 @@ namespace NpmGateway\Repositories;
 use mysqli;
 use NpmGateway\Contracts\EmployeeStoreInterface;
 use NpmGateway\Contracts\EmployeeDirectoryStoreInterface;
-use NpmGateway\ValueObjects\EmployeeAssignment;
 use NpmGateway\ValueObjects\EmployeeDirectoryCriteria;
-use NpmGateway\ValueObjects\EmployeeDirectoryProfile;
 final class EmployeeRepository implements EmployeeStoreInterface,EmployeeDirectoryStoreInterface
 {
     public function __construct(private readonly mysqli $connection) {}
@@ -54,15 +52,6 @@ final class EmployeeRepository implements EmployeeStoreInterface,EmployeeDirecto
     public function countDirectoryResults(EmployeeDirectoryCriteria $criteria):int
     {
         [$where,$types,$params]=$this->directoryWhere($criteria);$statement=$this->connection->prepare("SELECT COUNT(*) FROM employees e {$where}");$this->bind($statement,$types,$params);$statement->execute();$count=(int)$statement->get_result()->fetch_row()[0];$statement->close();return $count;
-    }
-    public function findDirectoryProfileByPublicId(string $publicId):?EmployeeDirectoryProfile
-    {
-        $statement=$this->connection->prepare("SELECT e.id,e.public_id,e.employee_number,CONCAT(e.first_name,' ',e.last_name) full_name,e.job_title,e.employee_class,e.employment_status,e.business_email,e.company_phone,CASE WHEN u.id IS NULL THEN 'None' WHEN u.status='active' THEN 'Active' ELSE 'Inactive' END gateway_access_status FROM employees e LEFT JOIN users u ON u.employee_id=e.id WHERE e.public_id=? LIMIT 1");
-        $statement->bind_param('s',$publicId);$statement->execute();$row=$statement->get_result()->fetch_assoc();$statement->close();if(!is_array($row))return null;
-        $assignmentStatement=$this->connection->prepare('SELECT p.public_id,p.display_name,a.assignment_type,a.is_primary,a.starts_on FROM employee_property_assignments a JOIN properties p ON p.id=a.property_id WHERE a.employee_id=? AND a.ends_on IS NULL ORDER BY a.is_primary DESC,p.display_name ASC');
-        $employeeId=(int)$row['id'];$assignmentStatement->bind_param('i',$employeeId);$assignmentStatement->execute();$assignmentRows=$assignmentStatement->get_result()->fetch_all(MYSQLI_ASSOC);$assignmentStatement->close();
-        $assignments=array_map(static fn(array $a):EmployeeAssignment=>new EmployeeAssignment((string)$a['public_id'],(string)$a['display_name'],(string)$a['assignment_type'],(int)$a['is_primary']===1,(string)$a['starts_on']),$assignmentRows);
-        return new EmployeeDirectoryProfile((string)$row['public_id'],(string)$row['employee_number'],(string)$row['full_name'],(string)$row['job_title'],(string)$row['employee_class'],(string)$row['employment_status'],$row['business_email']===null?null:(string)$row['business_email'],$row['company_phone']===null?null:(string)$row['company_phone'],(string)$row['gateway_access_status'],$assignments);
     }
     /** @return array{string,string,list<mixed>} */
     private function directoryWhere(EmployeeDirectoryCriteria $criteria):array

@@ -2,10 +2,8 @@
 declare(strict_types=1);
 namespace NpmGateway\Services;
 use NpmGateway\Contracts\EmployeeDirectoryStoreInterface;
-use NpmGateway\Exceptions\Domain\EmployeeNotFoundException;
 use NpmGateway\ValueObjects\EmployeeDirectoryCriteria;
 use NpmGateway\ValueObjects\EmployeeDirectoryPage;
-use NpmGateway\ValueObjects\EmployeeDirectoryProfile;
 use NpmGateway\ValueObjects\EmployeeDirectoryRow;
 final class EmployeeDirectoryService
 {
@@ -16,9 +14,5 @@ final class EmployeeDirectoryService
         if($page!==$criteria->page)$criteria=new EmployeeDirectoryCriteria($criteria->search,$criteria->employeeClass,$criteria->employmentStatus,$criteria->sort,$criteria->direction,$page,$criteria->perPage);
         $rows=array_map(static fn(array $r):EmployeeDirectoryRow=>new EmployeeDirectoryRow((string)$r['employee_public_id'],(string)$r['employee_number'],(string)$r['display_name'],(string)$r['job_title'],(string)$r['employee_class'],(string)$r['employment_status'],$r['business_email']===null?null:(string)$r['business_email'],$r['company_phone']===null?null:(string)$r['company_phone'],(string)$r['primary_property_name'],(string)$r['gateway_access_status']),$this->employees->searchDirectory($criteria));
         return new EmployeeDirectoryPage($rows,$total,$page,$criteria->perPage,$pages,$criteria);
-    }
-    public function getProfile(string $publicId):EmployeeDirectoryProfile
-    {
-        $profile=$this->employees->findDirectoryProfileByPublicId($publicId);if($profile===null)throw new EmployeeNotFoundException('Employee was not found.');return $profile;
     }
 }

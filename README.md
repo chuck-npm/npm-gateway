@@ -325,7 +325,7 @@ The authenticated `/dashboard` route is the permanent Gateway operations home
 page. It leads with a compact welcome banner whose display name, employee class,
 and job title come from the validated database-backed identity. Universal Tools
 is the primary content: a deterministic catalog of 12 everyday capabilities
-covering Employee Directory, Property Information, Company Documents,
+covering Company Directory, Property Information, Company Documents,
 Announcements, Credit Card Purchases, Large File Transfers, Order Supplies,
 Time Off Requests, Policies & Procedures, Training Library, Support Requests,
 and Help Desk.
@@ -366,12 +366,14 @@ and middleware. During manual validation,
 confirm the section order, four disabled cards, disabled dropdown entries, and
 mobile navbar behavior at 320, 768, 1280, and 1920 pixels.
 
-## Employee Workspace
+## Company Directory
 
-The Employee Directory card is Gateway's first enabled Universal Tool. Every
-authenticated user may open the read-only workspace at `/employees` and
-approved profiles at `/employees/{publicId}`. Server-side GET criteria provide
+The Company Directory card is Gateway's first enabled Universal Tool. Every
+authenticated user may open the read-only workspace at `/employees`.
+Server-side GET criteria provide
 bounded search, class/status filters, whitelisted sorting, and pagination.
+The user-facing experience is search-first because its primary purpose is to
+find employee company contact information quickly.
 
 Only approved operational fields are presented: employee number, name, title,
 class, status, business contact information, current assignment summary, and
@@ -383,5 +385,29 @@ correctly have no Gateway user.
 
 Directory read access grants no write permission. No create, edit, disable,
 import, or export routes exist. For manual validation, search by name and
-employee number, apply and clear filters, open a public-ID profile, and repeat
-at 320, 768, 1280, and 1920 pixels.
+employee number, apply and clear filters, and repeat at 320, 768, 1280, and
+1920 pixels.
+
+The Company Directory boundary is universal approved contact information only.
+It has no employee-detail route or View action. Complete employee records,
+detailed assignments, employment history, documents, notes, and dates belong
+exclusively to the restricted Human Resources module, which is not implemented
+in this commit.
+
+Future employee creation remains deliberately deferred. Corporate-authorized
+users will create corporate employees, managers, and assistant managers;
+managers and assistant managers automatically receive Gateway accounts.
+Managers and assistant managers may create active maintenance employees within
+their approved operational context. Maintenance employees never receive
+Gateway accounts and appear immediately in the directory. Corporate employees
+will receive an approved contact-information notice for each new maintenance
+employee.
+
+Gateway will generate permanent, never-reused employee numbers in `NPM######`
+format. Creation must use a bounded MySQL advisory lock and transaction,
+recheck uniqueness, and fail safely after `NPM999999`; an unlocked
+`MAX + 1` implementation is prohibited. Transfers close the current assignment
+and create a new assignment while preserving the same employee and assignment
+history. Corporate is a valid future operational context, but no synthetic
+Corporate property or assignment is created here. Employee photos, avatars,
+photo uploads, and image placeholders are outside the employee module.
