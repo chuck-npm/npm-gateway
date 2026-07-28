@@ -34,3 +34,16 @@ Dashboards present verified facts and truthful empty states; they never invent
 operational data to fill space. Navigation exposes only implemented
 capabilities, and hidden controls never constitute authorization. Authenticated
 identity remains request-scoped, and the presentation layer remains replaceable.
+# Operations-home principles
+
+Gateway home pages prioritize immediate operational access over executive
+analytics. Tool cards represent plausible, named business capabilities and
+must never advertise unavailable functionality through dead links. Visibility
+and authorization are separate concerns: neither the client nor a user may
+infer authorization from a visible card. Once implemented, universal
+capabilities must be reached through approved application services and real
+internal routes.
+
+Unavailable capabilities remain informative, explicitly labeled, and
+non-interactive. Home pages must not manufacture activity, counts, trends, or
+other data to make a layout appear complete.

@@ -31,6 +31,9 @@ use NpmGateway\Repositories\EmployeeRepository;
 use NpmGateway\Repositories\UserRepository;
 use NpmGateway\Repositories\DashboardSummaryRepository;
 use NpmGateway\Services\DashboardSummaryService;
+use NpmGateway\Services\DashboardHomeService;
+use NpmGateway\Services\UniversalToolProvider;
+use NpmGateway\Contracts\UniversalToolProviderInterface;
 use NpmGateway\Contracts\DashboardSummaryStoreInterface;
 use NpmGateway\Services\AuditService;
 use NpmGateway\Services\EmployeeService;
@@ -69,6 +72,8 @@ final class ServiceProvider
         $container->set(DashboardSummaryRepository::class,static fn(Container $c):DashboardSummaryRepository=>new DashboardSummaryRepository($c->get(mysqli::class)));
         $container->set(DashboardSummaryStoreInterface::class,static fn(Container $c):DashboardSummaryStoreInterface=>$c->get(DashboardSummaryRepository::class));
         $container->set(DashboardSummaryService::class,static fn(Container $c):DashboardSummaryService=>new DashboardSummaryService($c->get(DashboardSummaryStoreInterface::class)));
+        $container->set(UniversalToolProviderInterface::class,static fn():UniversalToolProviderInterface=>new UniversalToolProvider());
+        $container->set(DashboardHomeService::class,static fn(Container $c):DashboardHomeService=>new DashboardHomeService($c->get(DashboardSummaryService::class),$c->get(UniversalToolProviderInterface::class)));
         $container->set(InitializationTransactionInterface::class, static fn (Container $c): InitializationTransactionInterface => new MySqlInitializationTransaction($c->get(mysqli::class)));
         $container->set(PasswordService::class, static fn (Container $c): PasswordService => new PasswordService($c->get(PasswordGeneratorInterface::class)));
         $container->set(EmployeeService::class, static fn (Container $c): EmployeeService => new EmployeeService($c->get(EmployeeStoreInterface::class), $c->get(PublicIdGenerator::class)));

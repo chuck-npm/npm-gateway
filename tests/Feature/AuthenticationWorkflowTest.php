@@ -14,6 +14,8 @@ use NpmGateway\Http\SessionCookie;
 use NpmGateway\Http\WebKernel;
 use NpmGateway\Security\CsrfService;
 use NpmGateway\Services\DashboardSummaryService;
+use NpmGateway\Services\DashboardHomeService;
+use NpmGateway\Services\UniversalToolProvider;
 use NpmGateway\ValueObjects\AuthenticatedUser;
 use NpmGateway\ValueObjects\AuthenticationResult;
 use NpmGateway\ValueObjects\ClientContext;
@@ -27,7 +29,7 @@ final class AuthenticationWorkflowTest extends TestCase
  protected function setUp():void
  {
   $config=new AuthenticationConfig('npm_gateway_session',false,true,'Lax',60,8,15,5,5,15,10,10,str_repeat('K',32));$csrf=new CsrfService($this->state);$csrf->token();$cookie=new SessionCookie($config);$this->authentication=new FakeBrowserAuthentication();$this->sessions=new FakeBrowserSessions();
-  $views=dirname(__DIR__,2).'/resources/views';$summaries=new DashboardSummaryService(new FakeDashboardSummaryStore());$this->kernel=new WebKernel(new AuthenticationController($this->authentication,$this->sessions,$cookie,$csrf,$views),new DashboardController($csrf,$summaries,$views),new RequireAuthenticationMiddleware($this->sessions,$cookie));
+  $views=dirname(__DIR__,2).'/resources/views';$summaries=new DashboardSummaryService(new FakeDashboardSummaryStore());$homes=new DashboardHomeService($summaries,new UniversalToolProvider());$this->kernel=new WebKernel(new AuthenticationController($this->authentication,$this->sessions,$cookie,$csrf,$views),new DashboardController($csrf,$homes,$views),new RequireAuthenticationMiddleware($this->sessions,$cookie));
  }
  public function testGetLoginRendersCsrfAndFields():void{$r=$this->kernel->handle(new Request('GET','/login'),$this->now());self::assertSame(200,$r->status);self::assertStringContainsString($this->state['csrf'],$r->body);self::assertStringContainsString('name="password"',$r->body);}
  public function testFailedLoginIsNeutralAndNeverEchoesPassword():void{$this->authentication->fail=true;$r=$this->kernel->handle($this->loginRequest('TEST-secret-password'),$this->now());self::assertSame(200,$r->status);self::assertStringContainsString('We could not sign you in',$r->body);self::assertStringNotContainsString('TEST-secret-password',$r->body);self::assertSame([],$r->cookies);}

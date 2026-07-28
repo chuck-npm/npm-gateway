@@ -319,3 +319,31 @@ that depends on them.
 Do not make routine schema changes manually in MySQL Workbench. Manual database
 work is limited to initial database creation, database-user and privilege
 administration, and emergency inspection or repair.
+# Operations home page
+
+The authenticated `/dashboard` route is the permanent Gateway operations home
+page. It leads with a compact welcome banner whose display name, employee class,
+and job title come from the validated database-backed identity. Universal Tools
+is the primary content: a deterministic catalog of 12 everyday capabilities
+covering Employee Directory, Property Information, Company Documents,
+Announcements, Credit Card Purchases, Large File Transfers, Order Supplies,
+Time Off Requests, Policies & Procedures, Training Library, Support Requests,
+and Help Desk.
+
+`DashboardHomeService` composes the existing truthful `DashboardSummaryService`
+with the database-independent `UniversalToolProviderInterface`. Typed,
+immutable `ToolCard` values are rendered by reusable tool-section and tool-card
+components. A capability is an accessible link only when its approved internal
+route is real. Planned capabilities render as readable non-interactive cards:
+there are no `#` placeholders, generic stub pages, or dead links.
+
+The former setup dashboard remains as a secondary system-status panel with real
+counts. The page uses no sidebar, fake activity, chart, client-side filtering,
+or custom JavaScript. At 1280px and above the grid has four columns, stepping
+through three, two, and one column for narrower screens.
+
+Manual validation: sign in at `http://npm-gateway.local`, open `/dashboard`,
+verify the identity context and 12 planned cards, resize through 320, 768, 1280,
+and 1920 pixels, confirm no horizontal scrolling or clickable planned card,
+then verify the keyboard-operated user menu, refresh persistence, and POST
+logout. Do not alter business data during this check.

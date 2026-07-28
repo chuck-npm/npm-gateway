@@ -1,30 +1,40 @@
 <?php
 declare(strict_types=1);
 $components=__DIR__.'/components';
+$escape=static fn(string $value):string=>htmlspecialchars($value,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');
+$summary=$home->setupSummary;
 ob_start();
-$breadcrumbItems=[['label'=>'Dashboard','current'=>true]];
-require $components.'/breadcrumb.php';
-$heading='Dashboard';$description='A current view of the NPM Gateway foundation.';$eyebrow='Gateway overview';$actionsHtml='';
-require $components.'/page-header.php';
 ?>
-<section class="row g-4" aria-label="Gateway summary">
-<?php foreach ([['Properties',$summary->propertyCount],['Employees',$summary->employeeCount],['Users',$summary->userCount],['Active users',$summary->activeUserCount],['Active assignments',$summary->activeAssignmentCount]] as [$label,$value]): ?>
- <div class="col-12 col-sm-6 col-xl"><?php $cardLabel=$label;$cardValue=(string)$value;$cardSupportingText='Verified current total';require $components.'/dashboard-card.php'; ?></div>
-<?php endforeach; ?>
+<section class="gateway-welcome-banner" aria-labelledby="gateway-welcome-title">
+ <p class="gateway-welcome-eyebrow">NPM Gateway · <?= $escape($home->employeeClassLabel) ?></p>
+ <h1 id="gateway-welcome-title">Welcome, <?= $escape($home->welcomeName) ?>.</h1>
+ <p>What would you like to do today?</p>
+ <?php if ($home->jobTitle !== ''): ?><span class="gateway-welcome-role"><?= $escape($home->jobTitle) ?></span><?php endif; ?>
 </section>
-<section class="mt-4" aria-labelledby="gateway-state-title">
- <?php if ($summary->initialSetup): ?>
-  <div class="gateway-card"><div class="gateway-card__body"><h2 class="gateway-card__title" id="gateway-state-title">Welcome to NPM Gateway</h2><p class="gateway-card__subtitle">Gateway is initialized and secure login is enabled.</p><h3 class="h6 mt-4">Confirmed</h3><ul><li>Administrator account created</li><li>Secure database-backed authentication enabled</li></ul><h3 class="h6 mt-4">Upcoming setup tasks</h3><ol><li>Add the first property</li><li>Add or import employees</li><li>Create additional Gateway users</li><li>Assign employees to properties</li></ol><p class="mb-0 text-secondary">Additional setup tools are not yet enabled.</p></div></div>
- <?php else: ?>
-  <div class="gateway-card"><div class="gateway-card__body"><div class="d-flex align-items-center justify-content-between gap-3"><div><h2 class="gateway-card__title" id="gateway-state-title">Gateway foundation ready</h2><p class="gateway-card__subtitle">Configured records are available for future operational workflows.</p></div><?php $statusLabel='Ready';$statusType='success';require $components.'/status-badge.php'; ?></div></div></div>
- <?php endif; ?>
+<?php
+$toolSectionTitle='Universal Tools';$toolSectionDescription='Functions available to every Gateway user.';$toolSectionId='universal-tools';$toolSectionScope='12 tools';$toolSectionCards=$home->universalTools;
+require $components.'/tool-section.php';
+?>
+<section class="gateway-setup-panel" aria-labelledby="gateway-setup-title">
+ <div>
+  <p class="gateway-setup-panel__eyebrow">System status</p>
+  <h2 id="gateway-setup-title"><?= $summary->initialSetup?'Gateway Setup':'Gateway foundation ready' ?></h2>
+  <?php if ($summary->initialSetup): ?><p>Administrator account created · Secure login enabled</p><p class="mb-0"><strong>Next:</strong> Add the first property when Property Management becomes available.</p>
+  <?php else: ?><p class="mb-0">Configured records are ready for operational workflows.</p><?php endif; ?>
+ </div>
+ <dl class="gateway-system-summary" aria-label="Current Gateway record totals">
+  <div><dt>Properties</dt><dd><?= $summary->propertyCount ?></dd></div>
+  <div><dt>Employees</dt><dd><?= $summary->employeeCount ?></dd></div>
+  <div><dt>Users</dt><dd><?= $summary->userCount ?></dd></div>
+  <div><dt>Assignments</dt><dd><?= $summary->activeAssignmentCount ?></dd></div>
+ </dl>
 </section>
 <?php
 $contentHtml=(string)ob_get_clean();
 $pageTitle='Dashboard — NPM Gateway';
 $navbarItems=\NpmGateway\Support\Navigation::forRoute('/dashboard',dirname(__DIR__,2));
-$navbarUserLabel=$summary->displayName;
-$navbarUserContext='@'.$user->username.($summary->jobTitle!==''?' · '.$summary->jobTitle:'');
+$navbarUserLabel=$home->welcomeName;
+$navbarUserContext='@'.$user->username.($home->jobTitle!==''?' · '.$home->jobTitle:'');
 $logoutCsrfToken=$csrfToken;
 $footerText='NPM Gateway — Internal use only';
 require __DIR__.'/layouts/app.php';

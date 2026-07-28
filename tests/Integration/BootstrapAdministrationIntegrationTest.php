@@ -23,6 +23,8 @@ use NpmGateway\Repositories\SessionRepository;
 use NpmGateway\Repositories\LoginAttemptRepository;
 use NpmGateway\Repositories\DashboardSummaryRepository;
 use NpmGateway\Services\DashboardSummaryService;
+use NpmGateway\Services\DashboardHomeService;
+use NpmGateway\Services\UniversalToolProvider;
 use NpmGateway\Configuration\AuthenticationConfig;
 use NpmGateway\Security\AuthenticationHasher;
 use NpmGateway\Support\SecureSessionTokenGenerator;
@@ -146,6 +148,24 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
                 self::assertSame(1, $initialSummary->activeUserCount);
                 self::assertSame(0, $initialSummary->activeAssignmentCount);
                 self::assertTrue($initialSummary->initialSetup);
+                $beforeDashboard=[
+                    'properties'=>self::rowCount($connection,'properties'),
+                    'employees'=>self::rowCount($connection,'employees'),
+                    'users'=>self::rowCount($connection,'users'),
+                    'assignments'=>self::rowCount($connection,'employee_property_assignments'),
+                ];
+                $home=(new DashboardHomeService($dashboard,new UniversalToolProvider()))->forUser($login->user);
+                self::assertSame('Integration Administrator',$home->welcomeName);
+                self::assertSame('Corporate',$home->employeeClassLabel);
+                self::assertSame('Corporate Administrator',$home->jobTitle);
+                self::assertCount(12,$home->universalTools);
+                foreach($home->universalTools as $tool){self::assertFalse($tool->enabled);self::assertNull($tool->route);}
+                self::assertSame($beforeDashboard,[
+                    'properties'=>self::rowCount($connection,'properties'),
+                    'employees'=>self::rowCount($connection,'employees'),
+                    'users'=>self::rowCount($connection,'users'),
+                    'assignments'=>self::rowCount($connection,'employee_property_assignments'),
+                ]);
                 $propertyId = $ids->generate();
                 $property = $connection->prepare("INSERT INTO properties (public_id,property_code,slug,display_name,status,manager_email,ivr_number,address_line_1,city,state,postal_code,timezone) VALUES (?,'IT','integration-test','Integration Test Property','active','manager@integration.example.test','+1555010199','1 Test Way','Testville','OH','43000','America/New_York')");
                 $property->bind_param('s',$propertyId);$property->execute();$property->close();

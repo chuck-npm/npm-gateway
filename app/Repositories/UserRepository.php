@@ -43,7 +43,7 @@ final class UserRepository implements UserStoreInterface
     /** @return array<string,mixed>|null */
     public function findForAuthentication(string $username): ?array
     {
-        $statement=$this->connection->prepare('SELECT u.id,u.public_id,u.employee_id,u.username,u.password_hash,u.status,u.failed_login_count,u.locked_until,e.public_id employee_public_id,e.first_name,e.last_name,e.job_title,e.employment_status FROM users u JOIN employees e ON e.id=u.employee_id WHERE u.username=? LIMIT 1');
+        $statement=$this->connection->prepare('SELECT u.id,u.public_id,u.employee_id,u.username,u.password_hash,u.status,u.failed_login_count,u.locked_until,e.public_id employee_public_id,e.first_name,e.last_name,e.job_title,e.employee_class,e.employment_status FROM users u JOIN employees e ON e.id=u.employee_id WHERE u.username=? LIMIT 1');
         $statement->bind_param('s',$username);$statement->execute();$row=$statement->get_result()->fetch_assoc();$statement->close();
         return is_array($row)?$row:null;
     }
@@ -64,7 +64,7 @@ final class UserRepository implements UserStoreInterface
     /** @return array<string,mixed>|null */
     public function findActiveIdentity(int $id):?array
     {
-        $statement=$this->connection->prepare("SELECT u.id,u.public_id,u.employee_id,u.username,u.status,e.public_id employee_public_id,e.first_name,e.last_name,e.job_title,e.employment_status FROM users u JOIN employees e ON e.id=u.employee_id WHERE u.id=? LIMIT 1");
+        $statement=$this->connection->prepare("SELECT u.id,u.public_id,u.employee_id,u.username,u.status,e.public_id employee_public_id,e.first_name,e.last_name,e.job_title,e.employee_class,e.employment_status FROM users u JOIN employees e ON e.id=u.employee_id WHERE u.id=? LIMIT 1");
         $statement->bind_param('i',$id);$statement->execute();$row=$statement->get_result()->fetch_assoc();$statement->close();return is_array($row)?$row:null;
     }
 }

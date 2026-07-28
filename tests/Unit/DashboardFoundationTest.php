@@ -5,6 +5,8 @@ use NpmGateway\Http\AuthenticatedRequestContext;
 use NpmGateway\Http\Controllers\DashboardController;
 use NpmGateway\Security\CsrfService;
 use NpmGateway\Services\DashboardSummaryService;
+use NpmGateway\Services\DashboardHomeService;
+use NpmGateway\Services\UniversalToolProvider;
 use NpmGateway\Support\Navigation;
 use NpmGateway\ValueObjects\AuthenticatedUser;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -23,12 +25,12 @@ final class DashboardFoundationTest extends TestCase
  {
   $html=$this->render(0);
   foreach(['href="#main-content"','id="main-content"','aria-label="Primary navigation"','aria-current="page"','data-bs-toggle="collapse"','NPM Gateway','Test Administrator','Sysadmin','method="post" action="/logout"'] as $expected)self::assertStringContainsString($expected,$html);
-  foreach(['/properties','/employees','/users','sidebar','Lorem Ipsum','Recent Activity','chart','TEST-session-secret'] as $forbidden)self::assertStringNotContainsString($forbidden,$html);
+  foreach(['href="/properties"','href="/employees"','href="/users"','sidebar','Lorem Ipsum','Recent Activity','chart','TEST-session-secret','href="#"'] as $forbidden)self::assertStringNotContainsString($forbidden,$html);
  }
  public function testInitialAndNormalStatesRemainTruthful():void
  {
-  $initial=$this->render(0);self::assertStringContainsString('Welcome to NPM Gateway',$initial);self::assertStringContainsString('Upcoming setup tasks',$initial);self::assertStringNotContainsString('Add Property</a>',$initial);
-  $normal=$this->render(1);self::assertStringContainsString('Gateway foundation ready',$normal);self::assertStringNotContainsString('Upcoming setup tasks',$normal);
+  $initial=$this->render(0);self::assertStringContainsString('Gateway Setup',$initial);self::assertStringContainsString('Add the first property when Property Management becomes available.',$initial);self::assertStringNotContainsString('Add Property</a>',$initial);
+  $normal=$this->render(1);self::assertStringContainsString('Gateway foundation ready',$normal);self::assertStringNotContainsString('Add the first property',$normal);
  }
  public function testNavigationConfigurationUsesOnlyExistingDashboardRoute():void
  {
@@ -43,7 +45,7 @@ final class DashboardFoundationTest extends TestCase
  }
  private function render(int $properties):string
  {
-  $state=[];$controller=new DashboardController(new CsrfService($state),$this->service($properties),dirname(__DIR__,2).'/resources/views');
+  $state=[];$controller=new DashboardController(new CsrfService($state),new DashboardHomeService($this->service($properties),new UniversalToolProvider()),dirname(__DIR__,2).'/resources/views');
   return $controller->index(new AuthenticatedRequestContext($this->user(),'TEST-session-secret'))->body;
  }
  private function service(int $properties):DashboardSummaryService
@@ -54,5 +56,5 @@ final class DashboardFoundationTest extends TestCase
   };
   return new DashboardSummaryService($store);
  }
- private function user():AuthenticatedUser{return new AuthenticatedUser(17,18,str_repeat('U',26),str_repeat('E',26),'testadmin','Test Administrator','Sysadmin');}
+ private function user():AuthenticatedUser{return new AuthenticatedUser(17,18,str_repeat('U',26),str_repeat('E',26),'testadmin','Test Administrator','Sysadmin','corporate');}
 }
