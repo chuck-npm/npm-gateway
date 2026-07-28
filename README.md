@@ -347,3 +347,21 @@ verify the identity context and 12 planned cards, resize through 320, 768, 1280,
 and 1920 pixels, confirm no horizontal scrolling or clickable planned card,
 then verify the keyboard-operated user menu, refresh persistence, and POST
 logout. Do not alter business data during this check.
+
+Corporate employees also receive a Corporate Tools section between Universal
+Tools and System Status. Its four priority areas are Finance, Human Resources,
+Marketing, and Admin. The top navigation presents the same broad areas in a
+Corporate dropdown. Until their modules exist, both cards and dropdown entries
+are readable but non-interactive and expose no destination.
+
+Corporate visibility is determined by the Gateway corporate-access framework
+through an injected access service. The authenticated user's permanent,
+non-reused Gateway username is matched against username membership in
+`config/corporate-access.php`; the configured lists are not exposed in the
+dashboard result or HTML. Business and personal email, shared property
+mailboxes, employee classification, job title, and property assignment do not
+grant application access. Commit 008 uses this decision for presentation
+filtering; final module authorization still belongs in application services
+and middleware. During manual validation,
+confirm the section order, four disabled cards, disabled dropdown entries, and
+mobile navbar behavior at 320, 768, 1280, and 1920 pixels.

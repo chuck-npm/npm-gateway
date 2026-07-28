@@ -4,8 +4,11 @@ use NpmGateway\Contracts\DashboardSummaryStoreInterface;
 use NpmGateway\Services\DashboardHomeService;
 use NpmGateway\Services\DashboardSummaryService;
 use NpmGateway\Services\UniversalToolProvider;
+use NpmGateway\Services\CorporateToolsProvider;
+use NpmGateway\Services\CorporateAccessService;
 use NpmGateway\ValueObjects\AuthenticatedUser;
 use NpmGateway\ValueObjects\ToolCard;
+use NpmGateway\Http\AuthenticatedRequestContext;
 use PHPUnit\Framework\TestCase;
 final class UniversalToolsFrameworkTest extends TestCase
 {
@@ -38,7 +41,7 @@ final class UniversalToolsFrameworkTest extends TestCase
     {
         $store=new class implements DashboardSummaryStoreInterface{public function counts():array{return ['property_count'=>0,'employee_count'=>1,'user_count'=>1,'active_user_count'=>1,'active_assignment_count'=>0];}};
         $user=new AuthenticatedUser(1,2,'user-public','employee-public','admin','A <User>','Sysadmin','corporate');
-        $home=(new DashboardHomeService(new DashboardSummaryService($store),new UniversalToolProvider()))->forUser($user);
+        $home=(new DashboardHomeService(new DashboardSummaryService($store),new UniversalToolProvider(),new CorporateToolsProvider(),new CorporateAccessService([])))->forRequest(new AuthenticatedRequestContext($user,'TEST-token'));
         self::assertSame('A <User>',$home->welcomeName);self::assertSame('Corporate',$home->employeeClassLabel);self::assertSame('Sysadmin',$home->jobTitle);self::assertCount(12,$home->universalTools);self::assertTrue($home->setupSummary->initialSetup);self::assertTrue((new ReflectionClass($home))->isReadOnly());
         foreach(['username','email','phone','password','session'] as $field)self::assertFalse(property_exists($home,$field));
     }

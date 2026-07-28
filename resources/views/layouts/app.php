@@ -7,6 +7,8 @@ $contentHtml = isset($contentHtml) ? (string) $contentHtml : '';
 $applicationName = isset($applicationName) ? (string) $applicationName : 'NPM Gateway';
 $pageTitle = isset($pageTitle) ? (string) $pageTitle : $applicationName;
 $navbarItems = isset($navbarItems) && is_array($navbarItems) ? $navbarItems : [];
+$navbarCorporateItems = isset($navbarCorporateItems) && is_array($navbarCorporateItems) ? $navbarCorporateItems : [];
+$showCorporateTools = isset($showCorporateTools) && $showCorporateTools === true;
 $navbarUserLabel = isset($navbarUserLabel) ? (string) $navbarUserLabel : 'User menu';
 $navbarUserContext = isset($navbarUserContext) ? (string) $navbarUserContext : '';
 $logoutCsrfToken = isset($logoutCsrfToken) ? (string) $logoutCsrfToken : '';

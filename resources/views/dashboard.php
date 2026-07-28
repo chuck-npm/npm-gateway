@@ -14,6 +14,10 @@ ob_start();
 <?php
 $toolSectionTitle='Universal Tools';$toolSectionDescription='Functions available to every Gateway user.';$toolSectionId='universal-tools';$toolSectionScope='12 tools';$toolSectionCards=$home->universalTools;
 require $components.'/tool-section.php';
+if($home->showCorporateTools){
+ $toolSectionTitle='Corporate Tools';$toolSectionDescription='Frequently used functions for corporate staff.';$toolSectionId='corporate-tools';$toolSectionScope='4 priority areas';$toolSectionCards=$home->corporateTools;
+ require $components.'/tool-section.php';
+}
 ?>
 <section class="gateway-setup-panel" aria-labelledby="gateway-setup-title">
  <div>
@@ -33,6 +37,8 @@ require $components.'/tool-section.php';
 $contentHtml=(string)ob_get_clean();
 $pageTitle='Dashboard — NPM Gateway';
 $navbarItems=\NpmGateway\Support\Navigation::forRoute('/dashboard',dirname(__DIR__,2));
+$navbarCorporateItems=$home->corporateTools;
+$showCorporateTools=$home->showCorporateTools;
 $navbarUserLabel=$home->welcomeName;
 $navbarUserContext='@'.$user->username.($home->jobTitle!==''?' · '.$home->jobTitle:'');
 $logoutCsrfToken=$csrfToken;

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 return [
-    // Future format:
-    // 'finance' => [
-    //     'username@example.com',
-    // ],
+    // Permanent Gateway usernames, grouped by corporate area:
+    'administration' => [
+        'chuck',
+    ],
 ];

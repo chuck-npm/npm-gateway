@@ -47,3 +47,14 @@ internal routes.
 Unavailable capabilities remain informative, explicitly labeled, and
 non-interactive. Home pages must not manufacture activity, counts, trends, or
 other data to make a layout appear complete.
+
+Home-page sections may vary according to decisions from the Gateway access
+framework so frequent operational tools remain easy to scan. Corporate access
+is resolved by an approved access service using permanent, non-reused Gateway
+username membership. Employee contact addresses, shared property mailboxes,
+employee classification, job title, and property assignment are separate
+concepts and do not determine application access. Corporate tools prioritize the broad areas approved users
+use most often. Presentation visibility is not final module authorization and
+must never be treated as proof of access by a client. Final authorization must
+be enforced by approved services or middleware. Disabled capabilities remain
+truthful, non-interactive, and destination-free.

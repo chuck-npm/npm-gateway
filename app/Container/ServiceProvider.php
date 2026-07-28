@@ -34,6 +34,9 @@ use NpmGateway\Services\DashboardSummaryService;
 use NpmGateway\Services\DashboardHomeService;
 use NpmGateway\Services\UniversalToolProvider;
 use NpmGateway\Contracts\UniversalToolProviderInterface;
+use NpmGateway\Contracts\CorporateToolsProviderInterface;
+use NpmGateway\Services\CorporateToolsProvider;
+use NpmGateway\Services\CorporateAccessService;
 use NpmGateway\Contracts\DashboardSummaryStoreInterface;
 use NpmGateway\Services\AuditService;
 use NpmGateway\Services\EmployeeService;
@@ -53,9 +56,11 @@ final class ServiceProvider
         $root = (string) $application['root'];
         $app = (array) $application['config']['app'];
         $notice = require $root . '/config/credential-notification.php';
+        $corporateAccess = require $root . '/config/corporate-access.php';
         /** @var AuthenticationConfig $authentication */
         $authentication = require $root . '/config/authentication.php';
         $container->instance('config.notification', $notice);
+        $container->instance('config.corporate-access', $corporateAccess);
         $container->instance(AuthenticationConfig::class, $authentication);
         $container->set(mysqli::class, static fn (): mysqli => MySqlConnectionFactory::connect(DatabaseProfiles::load('application', $root)));
         $container->set(PasswordGeneratorInterface::class, static fn (): PasswordGeneratorInterface => new SecurePasswordGenerator());
@@ -73,7 +78,9 @@ final class ServiceProvider
         $container->set(DashboardSummaryStoreInterface::class,static fn(Container $c):DashboardSummaryStoreInterface=>$c->get(DashboardSummaryRepository::class));
         $container->set(DashboardSummaryService::class,static fn(Container $c):DashboardSummaryService=>new DashboardSummaryService($c->get(DashboardSummaryStoreInterface::class)));
         $container->set(UniversalToolProviderInterface::class,static fn():UniversalToolProviderInterface=>new UniversalToolProvider());
-        $container->set(DashboardHomeService::class,static fn(Container $c):DashboardHomeService=>new DashboardHomeService($c->get(DashboardSummaryService::class),$c->get(UniversalToolProviderInterface::class)));
+        $container->set(CorporateToolsProviderInterface::class,static fn():CorporateToolsProviderInterface=>new CorporateToolsProvider());
+        $container->set(CorporateAccessService::class,static fn(Container $c):CorporateAccessService=>new CorporateAccessService($c->get('config.corporate-access')));
+        $container->set(DashboardHomeService::class,static fn(Container $c):DashboardHomeService=>new DashboardHomeService($c->get(DashboardSummaryService::class),$c->get(UniversalToolProviderInterface::class),$c->get(CorporateToolsProviderInterface::class),$c->get(CorporateAccessService::class)));
         $container->set(InitializationTransactionInterface::class, static fn (Container $c): InitializationTransactionInterface => new MySqlInitializationTransaction($c->get(mysqli::class)));
         $container->set(PasswordService::class, static fn (Container $c): PasswordService => new PasswordService($c->get(PasswordGeneratorInterface::class)));
         $container->set(EmployeeService::class, static fn (Container $c): EmployeeService => new EmployeeService($c->get(EmployeeStoreInterface::class), $c->get(PublicIdGenerator::class)));

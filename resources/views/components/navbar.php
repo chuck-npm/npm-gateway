@@ -5,6 +5,8 @@ declare(strict_types=1);
 $navbarBrand = isset($navbarBrand) ? (string) $navbarBrand : 'NPM Gateway';
 $navbarBrandUrl = isset($navbarBrandUrl) ? (string) $navbarBrandUrl : '/';
 $navbarItems = isset($navbarItems) && is_array($navbarItems) ? $navbarItems : [];
+$navbarCorporateItems = isset($navbarCorporateItems) && is_array($navbarCorporateItems) ? $navbarCorporateItems : [];
+$showCorporateTools = isset($showCorporateTools) && $showCorporateTools === true;
 $navbarUserLabel = isset($navbarUserLabel) ? (string) $navbarUserLabel : 'User menu';
 $navbarUserContext = isset($navbarUserContext) ? (string) $navbarUserContext : '';
 $logoutCsrfToken = isset($logoutCsrfToken) ? (string) $logoutCsrfToken : '';
@@ -36,6 +38,20 @@ $logoutCsrfToken = isset($logoutCsrfToken) ? (string) $logoutCsrfToken : '';
                         </a>
                     </li>
                 <?php endforeach; ?>
+                <?php if ($showCorporateTools && $navbarCorporateItems !== []): ?>
+                <li class="nav-item dropdown gateway-navbar__item gateway-navbar__corporate">
+                    <button class="nav-link dropdown-toggle gateway-navbar__link gateway-navbar__corporate-toggle"
+                            type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                            aria-label="Corporate tools menu">
+                        Corporate
+                    </button>
+                    <ul class="dropdown-menu gateway-navbar__menu" aria-label="Corporate tools">
+                        <?php foreach ($navbarCorporateItems as $corporateItem): ?>
+                        <li><span class="dropdown-item-text gateway-navbar__disabled-item"><?= htmlspecialchars($corporateItem->title,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?><span class="gateway-navbar__planned">Planned</span></span></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </li>
+                <?php endif; ?>
                 <li class="nav-item dropdown gateway-navbar__item gateway-navbar__user">
                     <button class="nav-link dropdown-toggle gateway-navbar__link gateway-navbar__user-toggle"
                             type="button" data-bs-toggle="dropdown" aria-expanded="false">

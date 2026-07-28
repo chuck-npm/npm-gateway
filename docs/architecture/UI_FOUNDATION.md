@@ -41,3 +41,20 @@ medium desktop, tablet, and narrow mobile widths. Cards have no fixed desktop
 width, transitions respect reduced-motion settings, and keyboard focus remains
 visible. The authenticated shell has no sidebar. Fake data, decorative
 metrics, fake activity, and unavailable navigation links are prohibited.
+
+## Corporate navigation pattern
+
+For authenticated users approved by the corporate-access service, page order is
+Welcome, Universal Tools, Corporate Tools, then System Status. Employee class
+and employee contact data do not control this presentation decision; access
+membership uses the permanent Gateway username. The Corporate section reuses the standard
+tool-section and tool-card components and contains four priority cards:
+Finance, Human Resources, Marketing, and Admin. It is omitted entirely when its
+filtered collection is empty.
+
+The top navigation may contain a Corporate dropdown for the same authenticated
+presentation context. Its trigger uses Bootstrap's existing accessible
+dropdown behavior. Unavailable areas render as non-focusable text with a
+visible `Planned` status—never as anchors, routes, buttons, or JavaScript
+actions. The dropdown remains inside the collapsible mobile navigation and the
+user menu remains separate. No sidebar is introduced.

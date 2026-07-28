@@ -454,6 +454,8 @@ body {
     font-size: 0.875rem;
     white-space: normal;
 }
+.gateway-navbar__disabled-item { display:flex;gap:1rem;align-items:center;justify-content:space-between;color:var(--gateway-muted);white-space:nowrap; }
+.gateway-navbar__planned { font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase; }
 .gateway-status {
     display: inline-flex;
     padding: 0.3rem 0.65rem;

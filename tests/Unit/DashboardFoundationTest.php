@@ -7,6 +7,8 @@ use NpmGateway\Security\CsrfService;
 use NpmGateway\Services\DashboardSummaryService;
 use NpmGateway\Services\DashboardHomeService;
 use NpmGateway\Services\UniversalToolProvider;
+use NpmGateway\Services\CorporateToolsProvider;
+use NpmGateway\Services\CorporateAccessService;
 use NpmGateway\Support\Navigation;
 use NpmGateway\ValueObjects\AuthenticatedUser;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -45,7 +47,7 @@ final class DashboardFoundationTest extends TestCase
  }
  private function render(int $properties):string
  {
-  $state=[];$controller=new DashboardController(new CsrfService($state),new DashboardHomeService($this->service($properties),new UniversalToolProvider()),dirname(__DIR__,2).'/resources/views');
+  $state=[];$controller=new DashboardController(new CsrfService($state),new DashboardHomeService($this->service($properties),new UniversalToolProvider(),new CorporateToolsProvider(),new CorporateAccessService([])),dirname(__DIR__,2).'/resources/views');
   return $controller->index(new AuthenticatedRequestContext($this->user(),'TEST-session-secret'))->body;
  }
  private function service(int $properties):DashboardSummaryService
