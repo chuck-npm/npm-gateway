@@ -85,7 +85,7 @@ final class CorporateToolsNavigationTest extends TestCase
         self::assertStringContainsString('$this->corporateAccess->allows($context)',$service);self::assertStringNotContainsString('jobTitle===',$service);self::assertStringNotContainsString("employeeClass==='corporate'",$service);
         foreach(['Finance','Human Resources','Marketing'] as $definition){self::assertStringNotContainsString($definition,$controller);self::assertStringNotContainsString($definition,$view);}
         self::assertStringNotContainsString('corporate-access.php',$controller);self::assertStringNotContainsString('corporate-access.php',$view);self::assertStringNotContainsString('->employeeClass===',$view);self::assertFileDoesNotExist($root.'/database/migrations/202607270003_corporate_tools.php');
-        self::assertSame([$root.'/public/assets/js/phone-mask.js'],glob($root.'/public/assets/js/*.js')?:[]);
+        self::assertSame([$root.'/public/assets/js/employee-username.js',$root.'/public/assets/js/phone-mask.js'],glob($root.'/public/assets/js/*.js')?:[]);
     }
     /** @param array<string,list<string>> $access */
     private function home(array $access=[]):DashboardHomeService

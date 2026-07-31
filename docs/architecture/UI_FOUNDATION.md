@@ -104,3 +104,6 @@ with normal breadcrumbs, page context, sectioned responsive form cards, and
 browser scrolling. Validation follows PRG back to that page with a summary,
 field errors, and preserved safe input. Modals remain reserved for small,
 bounded actions such as confirmations and status changes.
+### Add Employee
+
+Major employee creation uses a dedicated authenticated page, never a modal. It follows the Add Property card, section separator, responsive two-column grid, validation summary, field-error, and bottom action-footer conventions. Cancel is a normal link; Create Employee is the only submit action. Employee number and password are generated and therefore not inputs. Both phone fields use the shared `data-phone-mask` behavior, and the editable username suggestion begins with the normalized lowercase first name without overwriting manual changes.

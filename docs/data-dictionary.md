@@ -38,12 +38,17 @@ Retained corporate, manager/assistant-manager, and maintenance history. Employee
 | `first_name`, `middle_name`, `last_name`, `preferred_name` | Person names. |
 | `business_email`, `personal_email`, `company_phone`, `personal_phone` | Optional contact channels. |
 | `job_title`, `employment_status` | Title and active/leave/inactive/terminated state. |
-| `hire_date`, `termination_date`, `supervisor_employee_id` | Employment dates and optional employee supervisor. |
+| `start_date`, `termination_date`, `supervisor_employee_id` | Required NPM employment start date (which may predate the Gateway record), termination date, and optional employee supervisor. `start_date` replaces the former `hire_date` terminology. |
+| `comments` | Nullable plain-text internal Employee Notes. Historical/imported records may be null; Add Employee requires a non-empty value. HR-restricted and excluded from universal directories, logs, and ordinary audit metadata. |
 | `created_at`, `updated_at`, `created_by`, `updated_by` | Timestamps and optional user actors. |
 
 Unique indexes: public ID, employee number, nullable business email. Other indexes: name, class/status, supervisor, hire date. Checks: number, class, status, lowercase emails, valid termination order. Foreign keys: supervisor self-reference and user audit actors, all RESTRICT.
 
-The application generates and never reuses employee numbers. Future allocation
+Assistant Manager is represented by `employee_class = 'manager'` and an active primary `assignment_type = 'assistant_manager'`; no assistant-manager employee class exists. Corporate employees have no assignment row. Their Corporate operational context is centrally derived from `employee_class = 'corporate'` and the protected Corporate property identity.
+
+New-employee credential notification is synchronous after the employee transaction commits. Recipient configuration is external, the sender must resolve to `no-reply@npmpropertiesinc.com`, and transport requires authenticated TLS. Notification content is never stored in business or audit tables; only a safe sent/failed status is audited.
+
+The application generates and never reuses employee numbers. Allocation
 uses a bounded MySQL advisory lock and employee-creation transaction, reads the
 highest recorded six-digit suffix, rechecks uniqueness, inserts, and releases
 the lock in `finally`. An unlocked `MAX() + 1` operation is prohibited, and

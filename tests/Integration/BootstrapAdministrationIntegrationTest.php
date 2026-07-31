@@ -69,7 +69,7 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
             self::assertContains($config['app_env'], ['local', 'testing']);
             self::assertContains($config['host'], ['127.0.0.1', 'localhost', '::1']);
         }
-        self::assertNotSame($migration['database'], $database);
+        self::assertSame($migration['database'], $database);
         $testConfig = [...$migration, 'database' => $database];
         $connection = null;
         try {
@@ -168,11 +168,11 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
                 self::assertSame('Corporate Administrator',$home->jobTitle);
                 self::assertCount(12,$home->universalTools);
                 self::assertCount(4,$home->corporateTools);
-                self::assertCount(1,array_filter($home->universalTools,static fn($tool):bool=>$tool->enabled));self::assertTrue($home->universalTools[0]->enabled);self::assertSame('/employees',$home->universalTools[0]->route);
-                foreach(array_slice($home->universalTools,1) as $tool){self::assertFalse($tool->enabled);self::assertNull($tool->route);}
-                foreach($home->corporateTools as $tool){self::assertFalse($tool->enabled);self::assertNull($tool->route);}
+                self::assertCount(2,array_filter($home->universalTools,static fn($tool):bool=>$tool->enabled));self::assertSame('/employees',$home->universalTools[0]->route);self::assertSame('/properties',$home->universalTools[1]->route);
+                foreach(array_slice($home->universalTools,2) as $tool){self::assertFalse($tool->enabled);self::assertNull($tool->route);}
+                self::assertCount(1,array_filter($home->corporateTools,static fn($tool):bool=>$tool->enabled));self::assertSame('/human-resources',$home->corporateTools[1]->route);
                 $csrfState=[];$response=(new DashboardController(new CsrfService($csrfState),new DashboardHomeService($dashboard,new UniversalToolProvider(),new CorporateToolsProvider(),$corporateAccess),$application['root'].'/resources/views'))->index(new AuthenticatedRequestContext($login->user,$login->session->reveal()));
-                self::assertSame(200,$response->status);self::assertStringContainsString('Corporate Tools',$response->body);self::assertStringContainsString('aria-label="Corporate tools menu"',$response->body);self::assertSame(4,substr_count($response->body,'gateway-navbar__disabled-item'));self::assertStringNotContainsString('href="#"',$response->body);
+                self::assertSame(200,$response->status);self::assertStringContainsString('Corporate Tools',$response->body);self::assertStringContainsString('aria-label="Corporate tools menu"',$response->body);self::assertSame(3,substr_count($response->body,'gateway-navbar__disabled-item'));self::assertStringNotContainsString('href="#"',$response->body);
                 self::assertSame($beforeDashboard,[
                     'properties'=>self::rowCount($connection,'properties'),
                     'employees'=>self::rowCount($connection,'employees'),
@@ -212,7 +212,7 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
                 self::assertStringNotContainsString($result->generatedPassword(), $allAudit);
                 self::assertStringNotContainsString($login->session->reveal(), $allAudit);
                 $managerEmployeePublicId=$ids->generate();$managerUserPublicId=$ids->generate();$managerPassword='TEST-manager-password-42';$managerHash=password_hash($managerPassword,PASSWORD_DEFAULT);$createdAt=$clock->now()->format('Y-m-d H:i:s');
-                $managerEmployee=$connection->prepare("INSERT INTO employees (public_id,employee_number,employee_class,first_name,last_name,business_email,job_title,employment_status,hire_date) VALUES (?,'NPM999997','manager','Integration','Manager','manager@example.test','Property Manager','active','2026-07-28')");
+                $managerEmployee=$connection->prepare("INSERT INTO employees (public_id,employee_number,employee_class,first_name,last_name,business_email,job_title,employment_status,start_date) VALUES (?,'NPM999997','manager','Integration','Manager','manager@example.test','Property Manager','active','2026-07-28')");
                 $managerEmployee->bind_param('s',$managerEmployeePublicId);$managerEmployee->execute();$managerEmployeeId=$connection->insert_id;$managerEmployee->close();
                 $managerUser=$connection->prepare("INSERT INTO users (public_id,employee_id,username,password_hash,status,password_changed_at,failed_login_count) VALUES (?,?,'integrationmanager',?,'active',?,0)");
                 $managerUser->bind_param('siss',$managerUserPublicId,$managerEmployeeId,$managerHash,$createdAt);$managerUser->execute();$managerUser->close();
@@ -221,7 +221,7 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
                 self::assertCount(12,$managerHome->universalTools);self::assertCount(4,$managerHome->corporateTools);
                 $managerCsrf=[];$managerResponse=(new DashboardController(new CsrfService($managerCsrf),new DashboardHomeService($dashboard,new UniversalToolProvider(),new CorporateToolsProvider(),$corporateAccess),$application['root'].'/resources/views'))->index(new AuthenticatedRequestContext($managerLogin->user,$managerLogin->session->reveal()));
                 self::assertStringContainsString('Universal Tools',$managerResponse->body);self::assertStringContainsString('Corporate Tools',$managerResponse->body);self::assertStringContainsString('Corporate tools menu',$managerResponse->body);
-                $maintenancePublicId=$ids->generate();$maintenanceEmployee=$connection->prepare("INSERT INTO employees (public_id,employee_number,employee_class,first_name,last_name,business_email,personal_email,company_phone,personal_phone,job_title,employment_status,hire_date) VALUES (?,'NPM999996','maintenance','Integration','Maintenance',NULL,'private@example.test',NULL,'+1555010101','Maintenance Technician','active','2026-07-28')");
+                $maintenancePublicId=$ids->generate();$maintenanceEmployee=$connection->prepare("INSERT INTO employees (public_id,employee_number,employee_class,first_name,last_name,business_email,personal_email,company_phone,personal_phone,job_title,employment_status,start_date) VALUES (?,'NPM999996','maintenance','Integration','Maintenance',NULL,'private@example.test',NULL,'+1555010101','Maintenance Technician','active','2026-07-28')");
                 $maintenanceEmployee->bind_param('s',$maintenancePublicId);$maintenanceEmployee->execute();$maintenanceEmployeeId=$connection->insert_id;$maintenanceEmployee->close();
                 foreach([[$managerEmployeeId,'property_manager',1],[$maintenanceEmployeeId,'maintenance',1]] as [$employeeId,$assignmentType,$primary]){
                     $assignmentPublicId=$ids->generate();$assignment=$connection->prepare("INSERT INTO employee_property_assignments (public_id,employee_id,property_id,assignment_type,is_primary,starts_on) VALUES (?,?,?,?,?,'2026-07-28')");

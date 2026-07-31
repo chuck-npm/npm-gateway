@@ -64,6 +64,14 @@ use NpmGateway\Support\PropertyAddressFormatter;
 use NpmGateway\Contracts\CorporateContextStoreInterface;
 use NpmGateway\Services\CorporateContextService;
 use NpmGateway\Services\CorporateContextSeeder;
+use NpmGateway\Contracts\HrEmployeeStoreInterface;
+use NpmGateway\Contracts\HrEmployeeNotifierInterface;
+use NpmGateway\Notifications\DisabledHrEmployeeNotifier;
+use NpmGateway\Services\HrEmployeeValidator;
+use NpmGateway\Services\HrEmployeeNotificationService;
+use NpmGateway\Services\HrEmployeeCreationService;
+use NpmGateway\Services\HrEmployeeNotificationConfig;
+use NpmGateway\Notifications\SmtpEmployeeNotificationSender;
 final class ServiceProvider
 {
     /** @param array<string, mixed> $application */
@@ -73,21 +81,25 @@ final class ServiceProvider
         $root = (string) $application['root'];
         $app = (array) $application['config']['app'];
         $notice = require $root . '/config/credential-notification.php';
+        $hrNotice = require $root . '/config/hr-employee-notification.php';
         $corporateAccess = require $root . '/config/corporate-access.php';
         /** @var AuthenticationConfig $authentication */
         $authentication = require $root . '/config/authentication.php';
         $container->instance('config.notification', $notice);
+        $container->instance('config.hr-employee-notification',$hrNotice);
         $container->instance('config.corporate-access', $corporateAccess);
         $container->instance(AuthenticationConfig::class, $authentication);
         $container->set(mysqli::class, static fn (): mysqli => MySqlConnectionFactory::connect(DatabaseProfiles::load('application', $root)));
         $container->set(PasswordGeneratorInterface::class, static fn (): PasswordGeneratorInterface => new SecurePasswordGenerator());
         $container->set(ClockInterface::class, static fn (): ClockInterface => new SystemClock(new DateTimeZone((string) ($app['timezone'] ?? 'UTC'))));
         $container->set(CredentialNotifierInterface::class, static fn (): CredentialNotifierInterface => new DisabledCredentialNotifier());
+        $container->set(HrEmployeeNotifierInterface::class,static function(Container $c):HrEmployeeNotifierInterface{try{return new SmtpEmployeeNotificationSender(HrEmployeeNotificationConfig::fromArray($c->get('config.hr-employee-notification')));}catch(\Throwable){return new DisabledHrEmployeeNotifier();}});
         $container->set(PublicIdGenerator::class, static fn (): PublicIdGenerator => new PublicIdGenerator());
         $container->set(SessionTokenGeneratorInterface::class, static fn (): SessionTokenGeneratorInterface => new SecureSessionTokenGenerator());
         $container->set(AuthenticationHasher::class, static fn(Container $c):AuthenticationHasher=>new AuthenticationHasher($c->get(AuthenticationConfig::class)));
         $container->set(EmployeeRepository::class,static fn(Container $c):EmployeeRepository=>new EmployeeRepository($c->get(mysqli::class)));
         $container->set(EmployeeStoreInterface::class, static fn (Container $c): EmployeeStoreInterface => $c->get(EmployeeRepository::class));
+        $container->set(HrEmployeeStoreInterface::class,static fn(Container $c):HrEmployeeStoreInterface=>$c->get(EmployeeRepository::class));
         $container->set(EmployeeDirectoryStoreInterface::class,static fn(Container $c):EmployeeDirectoryStoreInterface=>$c->get(EmployeeRepository::class));
         $container->set(EmployeeDirectoryCriteriaFactory::class,static fn():EmployeeDirectoryCriteriaFactory=>new EmployeeDirectoryCriteriaFactory());
         $container->set(EmployeeDirectoryService::class,static fn(Container $c):EmployeeDirectoryService=>new EmployeeDirectoryService($c->get(EmployeeDirectoryStoreInterface::class)));
@@ -116,6 +128,9 @@ final class ServiceProvider
         $container->set(DashboardHomeService::class,static fn(Container $c):DashboardHomeService=>new DashboardHomeService($c->get(DashboardSummaryService::class),$c->get(UniversalToolProviderInterface::class),$c->get(CorporateToolsProviderInterface::class),$c->get(CorporateAccessService::class)));
         $container->set(InitializationTransactionInterface::class, static fn (Container $c): InitializationTransactionInterface => new MySqlInitializationTransaction($c->get(mysqli::class)));
         $container->set(PasswordService::class, static fn (Container $c): PasswordService => new PasswordService($c->get(PasswordGeneratorInterface::class)));
+        $container->set(HrEmployeeValidator::class,static fn(Container $c):HrEmployeeValidator=>new HrEmployeeValidator($c->get(HrEmployeeStoreInterface::class),$c->get(UserStoreInterface::class),$c->get(PhoneFormatter::class)));
+        $container->set(HrEmployeeNotificationService::class,static fn(Container $c):HrEmployeeNotificationService=>new HrEmployeeNotificationService($c->get(HrEmployeeNotifierInterface::class),$c->get('config.hr-employee-notification')));
+        $container->set(HrEmployeeCreationService::class,static fn(Container $c):HrEmployeeCreationService=>new HrEmployeeCreationService($c->get(HrEmployeeValidator::class),$c->get(HrEmployeeStoreInterface::class),$c->get(InitializationTransactionInterface::class),$c->get(UserService::class),$c->get(PasswordService::class),$c->get(AuditService::class),$c->get(HrEmployeeNotificationService::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get('config.hr-employee-notification')));
         $container->set(EmployeeService::class, static fn (Container $c): EmployeeService => new EmployeeService($c->get(EmployeeStoreInterface::class), $c->get(PublicIdGenerator::class)));
         $container->set(UserService::class, static fn (Container $c): UserService => new UserService($c->get(UserStoreInterface::class), $c->get(PublicIdGenerator::class)));
         $container->set(AuditService::class, static fn (Container $c): AuditService => new AuditService($c->get(AuditStoreInterface::class), $c->get(PublicIdGenerator::class)));

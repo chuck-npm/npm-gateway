@@ -7,9 +7,10 @@ use NpmGateway\Http\Middleware\RequireAuthenticationMiddleware;
 use NpmGateway\Http\Controllers\EmployeeWorkspaceController;
 use NpmGateway\Http\Controllers\PropertyWorkspaceController;
 use NpmGateway\Http\Controllers\HumanResourcesController;
+use NpmGateway\Http\Controllers\HrEmployeeController;
 final class WebKernel
 {
- public function __construct(private readonly AuthenticationController $authentication,private readonly DashboardController $dashboard,private readonly RequireAuthenticationMiddleware $middleware,private readonly ?EmployeeWorkspaceController $employees=null,private readonly ?PropertyWorkspaceController $properties=null,private readonly ?HumanResourcesController $hr=null){}
+ public function __construct(private readonly AuthenticationController $authentication,private readonly DashboardController $dashboard,private readonly RequireAuthenticationMiddleware $middleware,private readonly ?EmployeeWorkspaceController $employees=null,private readonly ?PropertyWorkspaceController $properties=null,private readonly ?HumanResourcesController $hr=null,private readonly ?HrEmployeeController $hrEmployees=null){}
  public function handle(Request $request,\DateTimeImmutable $now):Response
  {
   if($request->path==='/')return Response::redirect('/login');
@@ -19,6 +20,9 @@ final class WebKernel
   if($request->path==='/employees'&&$request->method==='GET'&&$this->employees!==null)return $this->middleware->handle($request,fn(AuthenticatedRequestContext $c):Response=>$this->employees->index($request,$c),$now);
   if($request->path==='/properties'&&$request->method==='GET'&&$this->properties!==null)return $this->middleware->handle($request,fn(AuthenticatedRequestContext $c):Response=>$this->properties->directory($request,$c),$now);
   if($request->path==='/human-resources'&&$request->method==='GET'&&$this->hr!==null)return $this->middleware->handle($request,fn(AuthenticatedRequestContext $c):Response=>$this->hr->index($c),$now);
+  if($request->path==='/human-resources/employees'&&$request->method==='GET'&&$this->hrEmployees!==null)return $this->middleware->handle($request,fn(AuthenticatedRequestContext $c):Response=>$this->hrEmployees->index($request,$c),$now);
+  if($request->path==='/human-resources/employees/create'&&$request->method==='GET'&&$this->hrEmployees!==null)return $this->middleware->handle($request,fn(AuthenticatedRequestContext $c):Response=>$this->hrEmployees->create($c),$now);
+  if($request->path==='/human-resources/employees'&&$request->method==='POST'&&$this->hrEmployees!==null)return $this->middleware->handle($request,fn(AuthenticatedRequestContext $c):Response=>$this->hrEmployees->store($request,$c),$now);
   if($request->path==='/human-resources/properties'&&$request->method==='GET'&&$this->properties!==null)return $this->middleware->handle($request,fn(AuthenticatedRequestContext $c):Response=>$this->properties->hrDirectory($request,$c),$now);
   if($request->path==='/human-resources/properties/create'&&$request->method==='GET'&&$this->properties!==null)return $this->middleware->handle($request,fn(AuthenticatedRequestContext $c):Response=>$this->properties->create($c),$now);
   if($request->path==='/human-resources/properties'&&$request->method==='POST'&&$this->properties!==null)return $this->middleware->handle($request,fn(AuthenticatedRequestContext $c):Response=>$this->properties->store($request,$c),$now);

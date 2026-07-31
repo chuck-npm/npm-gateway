@@ -445,3 +445,10 @@ Authorized property creation uses the dedicated
 page context and scrolling; Bootstrap modals are reserved for smaller bounded
 actions. Validation failures return to the create page with safe values and
 field errors, while successful creation redirects to the HR property directory.
+### Human Resources employee administration
+
+Authorized Corporate users manage employees at `/human-resources/employees` and create them on a dedicated `/human-resources/employees/create` page. All visible fields are required for new records, including employment `start_date`, business and personal contact details, operational context, permanent lowercase username, and plain-text Employee Notes. Personal contacts and notes remain HR-restricted.
+
+Every Corporate, Manager, and Assistant Manager created here receives a Gateway account. Employee numbers use locked, never-reused `NPM######` allocation. Gateway generates and Argon2id-hashes the initial permanent password; plaintext exists only in process memory through the synchronous post-commit `SECURE` notification attempt. Configure comma-separated recipients with `HR_NEW_EMPLOYEE_NOTIFICATION_RECIPIENTS` and the approved sender with `MAIL_FROM_ADDRESS=no-reply@npmpropertiesinc.com`. A failed notification does not roll back committed employee data, and the unrecoverable plaintext password is never stored for retry. Password reset/change workflows remain deferred.
+
+New-employee mail uses PHPMailer over authenticated TLS (`SMTP_SECURE=tls`) or implicit TLS (`SMTP_SECURE=ssl`) with normal certificate verification. `php bin/gateway notification:check` performs a local-only, non-sending configuration diagnostic and reports no credentials. It never opens an SMTP connection or sends an email.

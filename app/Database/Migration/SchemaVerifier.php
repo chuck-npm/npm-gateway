@@ -74,7 +74,7 @@ final class SchemaVerifier
         );
         $authenticationSecurityApplied = isset($executed[AuthenticationSecuritySchema::MIGRATION]);
         if (isset($executed[FoundationSchema::MIGRATION])) {
-            $this->verifyFoundationSchema($authenticationSecurityApplied);
+            $this->verifyFoundationSchema($authenticationSecurityApplied,isset($executed[EmployeeAdministrationSchema::MIGRATION]));
         }
         if ($authenticationSecurityApplied) {
             $this->verifyAuthenticationSecuritySchema();
@@ -83,6 +83,7 @@ final class SchemaVerifier
             $this->verifyPropertiesWorkspaceSchema();
         }
         if(isset($executed[CorporateContextSchema::MIGRATION])){$this->verifyCorporateContextSchema();}
+        if(isset($executed[EmployeeAdministrationSchema::MIGRATION])){$this->verifyEmployeeAdministrationSchema();}
 
         return [
             'Schema verification passed.',
@@ -105,8 +106,17 @@ final class SchemaVerifier
     {
         $statement=$this->connection->prepare('SELECT IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=\'properties\' AND COLUMN_NAME=\'ivr_number\'');$database=$this->expectedDatabase;$statement->bind_param('s',$database);$statement->execute();$nullable=(string)($statement->get_result()->fetch_row()[0]??'');$statement->close();if($nullable!=='YES')throw new MigrationException('properties.ivr_number must be nullable after Corporate Context migration.');
     }
+    private function verifyEmployeeAdministrationSchema():void
+    {
+        $statement=$this->connection->prepare("SELECT COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME='employees' AND COLUMN_NAME IN ('hire_date','start_date','comments')");
+        $database=$this->expectedDatabase;$statement->bind_param('s',$database);$statement->execute();$result=$statement->get_result();$columns=[];while($row=$result->fetch_assoc())$columns[(string)$row['COLUMN_NAME']]=$row;$statement->close();
+        if(isset($columns['hire_date']))throw new MigrationException('employees.hire_date must not exist after Employee Administration migration.');
+        if(($columns['start_date']['COLUMN_TYPE']??'')!=='date'||($columns['start_date']['IS_NULLABLE']??'')!=='NO')throw new MigrationException('employees.start_date must be DATE NOT NULL.');
+        if(($columns['comments']['COLUMN_TYPE']??'')!=='text'||($columns['comments']['IS_NULLABLE']??'')!=='YES')throw new MigrationException('employees.comments must be nullable TEXT.');
+        $indexes=$this->tableMetadata('employees')['indexes'];if(!isset($indexes['idx_employees_start_date'])||isset($indexes['idx_employees_hire_date']))throw new MigrationException('Employee start-date index is invalid.');
+    }
 
-    private function verifyFoundationSchema(bool $authenticationSecurityApplied): void
+    private function verifyFoundationSchema(bool $authenticationSecurityApplied,bool $employeeAdministrationApplied): void
     {
         foreach (FoundationSchema::expectations() as $table => $expected) {
             $metadata = $this->tableMetadata($table);
@@ -117,6 +127,7 @@ final class SchemaVerifier
                 throw new MigrationException("{$table} has an invalid collation.");
             }
             foreach ($expected['indexes'] as $index) {
+                if($employeeAdministrationApplied&&$table==='employees'&&$index==='idx_employees_hire_date')continue;
                 if (!isset($metadata['indexes'][$index])) {
                     throw new MigrationException("Missing index {$index} on {$table}.");
                 }

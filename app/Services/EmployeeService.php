@@ -13,7 +13,7 @@ final class EmployeeService
         private readonly PublicIdGenerator $publicIds
     ) {}
     /** @return array{id: int, public_id: string, employee_number: string, first_name: string, last_name: string, job_title: string, business_email: string, company_phone: ?string} */
-    public function createBootstrapCorporate(InitializeAdministratorRequest $request, string $hireDate): array
+    public function createBootstrapCorporate(InitializeAdministratorRequest $request, string $startDate): array
     {
         $number = strtoupper(trim($request->employeeNumber));
         if (preg_match('/^NPM[0-9]{6}$/', $number) !== 1) {
@@ -40,7 +40,7 @@ final class EmployeeService
             'first_name' => $first, 'last_name' => $last, 'business_email' => $email,
             'personal_email' => $personalEmail, 'company_phone' => $companyPhone,
             'personal_phone' => $personalPhone, 'job_title' => $title,
-            'employment_status' => 'active', 'hire_date' => $hireDate,
+            'employment_status' => 'active', 'start_date' => $startDate, 'comments'=>null,
         ]);
         return ['id' => $id, 'public_id' => $publicId, 'employee_number' => $number, 'first_name' => $first, 'last_name' => $last, 'job_title' => $title, 'business_email' => $email, 'company_phone' => $companyPhone];
     }

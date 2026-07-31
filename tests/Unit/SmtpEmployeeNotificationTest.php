@@ -1,0 +1,18 @@
+<?php
+declare(strict_types=1);
+use NpmGateway\Console\NotificationCheckCommand;
+use NpmGateway\Exceptions\Domain\CredentialNotificationException;
+use NpmGateway\Notifications\SmtpEmployeeNotificationSender;
+use NpmGateway\Services\HrEmployeeNotificationConfig;
+use NpmGateway\ValueObjects\HrEmployeeNotice;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPUnit\Framework\TestCase;
+final class SmtpEmployeeNotificationTest extends TestCase
+{
+    private function config(array $replace=[]):array{return array_replace(['host'=>'smtp.example.test','port'=>'587','username'=>'mailer','password'=>'TEST-secret-not-output','secure'=>'tls','from_address'=>'no-reply@npmpropertiesinc.com','from_name'=>'NPM Gateway','recipients'=>'noc@npmparks.com,second@example.test,noc@npmparks.com','environment'=>'testing'],$replace);}
+    public function testConfigurationIsStrictAndDeduplicatesRecipients():void{$config=HrEmployeeNotificationConfig::fromArray($this->config());self::assertSame(['noc@npmparks.com','second@example.test'],$config->recipients);self::assertSame(587,$config->port);foreach([['host'=>''],['from_address'=>''],['from_address'=>'other@example.test'],['recipients'=>''],['recipients'=>'bad'],['secure'=>''],['secure'=>'none']] as $invalid){try{HrEmployeeNotificationConfig::fromArray($this->config($invalid));self::fail('Invalid SMTP configuration accepted.');}catch(CredentialNotificationException){self::addToAssertionCount(1);}}}
+    public function testAdapterConfiguresEncryptedSmtpAndMessage():void{$mailer=new CapturingMailer();$sender=new SmtpEmployeeNotificationSender(HrEmployeeNotificationConfig::fromArray($this->config()),static fn():PHPMailer=>$mailer);$notice=new HrEmployeeNotice([],'ignored@example.test','Ignored','SECURE — Employee','<p>HTML</p>','Plain','TEST-initial-password');$sender->notify($notice);self::assertTrue($mailer->sent);self::assertSame('smtp.example.test',$mailer->Host);self::assertSame(587,$mailer->Port);self::assertTrue($mailer->SMTPAuth);self::assertSame(PHPMailer::ENCRYPTION_STARTTLS,$mailer->SMTPSecure);self::assertSame(PHPMailer::CHARSET_UTF8,$mailer->CharSet);self::assertSame(0,$mailer->SMTPDebug);self::assertSame('SECURE — Employee',$mailer->Subject);self::assertSame('<p>HTML</p>',$mailer->Body);self::assertSame('Plain',$mailer->AltBody);self::assertCount(2,$mailer->getToAddresses());self::assertSame('no-reply@npmpropertiesinc.com',$mailer->From);}
+    public function testFailureIsSanitized():void{$mailer=new CapturingMailer();$mailer->failure=true;$sender=new SmtpEmployeeNotificationSender(HrEmployeeNotificationConfig::fromArray($this->config()),static fn():PHPMailer=>$mailer);try{$sender->notify(new HrEmployeeNotice([],'','','SECURE','html','text','TEST-password'));self::fail('Send failure was ignored.');}catch(CredentialNotificationException $e){self::assertSame('The secure employee notification could not be sent.',$e->getMessage());self::assertStringNotContainsString('TEST-password',$e->getMessage());}}
+    public function testDiagnosticIsLocalNonSendingAndSecretFree():void{$result=NotificationCheckCommand::run($this->config());self::assertSame(0,$result['exit_code']);self::assertStringContainsString('Email sent: no',$result['stdout']);self::assertStringContainsString('Recipient count: 2',$result['stdout']);self::assertStringNotContainsString('TEST-secret-not-output',$result['stdout'].$result['stderr']);$blocked=NotificationCheckCommand::run($this->config(['environment'=>'production']));self::assertSame(2,$blocked['exit_code']);}
+}
+final class CapturingMailer extends PHPMailer{public bool $sent=false;public bool $failure=false;public function send():bool{if($this->failure)throw new RuntimeException('Raw SMTP detail with secret');$this->sent=true;return true;}}

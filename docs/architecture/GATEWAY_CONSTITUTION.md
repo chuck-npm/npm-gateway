@@ -120,3 +120,8 @@ Employee numbers are Gateway-generated, permanent, never reused, and formatted
 transaction, uniqueness recheck, and safe exhaustion at `NPM999999`; unlocked
 `MAX + 1` allocation is forbidden. Employee photographs are not part of the
 Gateway employee domain.
+### HR employee creation boundary
+
+HR employee creation is explicitly authorized through `CorporateAccessService` and is transactional across employee, primary operational assignment where applicable, Gateway user, and creation audit. Corporate context is derived without an assignment; Manager uses `property_manager`; Assistant Manager maps to employee class `manager` and assignment type `assistant_manager`. Personal contacts and Employee Notes never enter universal directory projections or routine audit metadata. Initial plaintext passwords may cross only the synchronous, post-commit secure-notification boundary and are never persisted.
+
+The production notification transport is an injected PHPMailer SMTP adapter using authenticated TLS with platform CA verification. Unencrypted modes and an incorrect sender are rejected before employee-number allocation. Transport failures are reduced to a safe domain error; raw SMTP errors, credentials, recipients, bodies, and passwords are not logged or exposed. Because the original initial password cannot be recovered from its hash after a failed post-commit send, a future authorized reset workflow—not plaintext retry storage—is the recovery design.

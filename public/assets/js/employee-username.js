@@ -1,0 +1,1 @@
+const first=document.querySelector('#employee-first_name');const username=document.querySelector('#employee-username');if(first&&username){let manual=username.value.trim()!=='';username.addEventListener('input',()=>{manual=true;});first.addEventListener('input',()=>{if(!manual)username.value=first.value.trim().toLowerCase().replace(/[^a-z0-9]/g,'');});}

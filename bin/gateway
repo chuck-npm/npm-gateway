@@ -11,6 +11,7 @@ use NpmGateway\Database\DatabaseDiagnostic;
 use NpmGateway\Database\DatabaseProfiles;
 use NpmGateway\Services\SystemInitializationService;
 use NpmGateway\Services\CorporateContextSeeder;
+use NpmGateway\Console\NotificationCheckCommand;
 
 $projectRoot = dirname(__DIR__);
 
@@ -28,6 +29,7 @@ $help = implode(PHP_EOL, [
     '  schema:verify',
     '  bootstrap:administrator',
     '  seed:corporate-context',
+    '  notification:check',
 ]) . PHP_EOL;
 
 if ($command === '' || in_array($command, ['help', '--help', '-h'], true)) {
@@ -65,6 +67,9 @@ if ($command === 'bootstrap:administrator') {
         $connection = $container->get(mysqli::class);
         $connection->close();
     }
+}
+if($command==='notification:check'){
+    if(count($arguments)!==1){fwrite(STDERR,"This command does not accept arguments.\n");exit(2);}$result=NotificationCheckCommand::run(require $projectRoot.'/config/hr-employee-notification.php');fwrite(STDOUT,$result['stdout']);fwrite(STDERR,$result['stderr']);exit($result['exit_code']);
 }
 if($command==='seed:corporate-context'){
     if(count($arguments)!==1){fwrite(STDERR,"This command does not accept arguments.\n");exit(2);}$profile=DatabaseProfiles::load('application',$application['root']);if(!in_array($profile['app_env'],['local','testing'],true)||!in_array($profile['host'],['127.0.0.1','localhost','::1'],true)||($profile['database']!=='npmgateway'&&!str_ends_with($profile['database'],'_test'))){fwrite(STDERR,"Corporate context seeding is restricted to approved local databases.\n");exit(2);}$container=ServiceProvider::build($application);try{$result=$container->get(CorporateContextSeeder::class)->seed();fwrite(STDOUT,$result->created?"Corporate operational context created.\n":"Corporate operational context already exists; no changes made.\n");exit(0);}catch(Throwable $e){fwrite(STDERR,str_replace(["\r","\n"],' ',$e->getMessage())."\n");exit(1);}finally{$container->get(mysqli::class)->close();}

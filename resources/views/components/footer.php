@@ -13,5 +13,6 @@ $footerText = isset($footerText) ? (string) $footerText : 'NPM Gateway';
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
         crossorigin="anonymous"></script>
 <script type="module" src="/assets/js/phone-mask.js"></script>
+<script type="module" src="/assets/js/employee-username.js"></script>
 </body>
 </html>
