@@ -22,7 +22,7 @@ final class CorporateToolsNavigationTest extends TestCase
         self::assertSame(['finance','human-resources','marketing','admin'],array_map(fn(ToolCard $card)=>$card->key,$first));
         self::assertSame(['Finance','Human Resources','Marketing','Admin'],array_map(fn(ToolCard $card)=>$card->title,$first));
         self::assertCount(4,array_unique(array_map(fn(ToolCard $card)=>$card->key,$first)));
-        foreach($first as $index=>$card){self::assertFalse($card->enabled);self::assertNull($card->route);self::assertNotSame('',$card->description);self::assertSame(($index+1)*10,$card->sortOrder);}
+        foreach($first as $index=>$card){if($card->key==='human-resources'){self::assertTrue($card->enabled);self::assertSame('/human-resources',$card->route);self::assertSame('hr.index',$card->routeName);}else{self::assertFalse($card->enabled);self::assertNull($card->route);}self::assertNotSame('',$card->description);self::assertSame(($index+1)*10,$card->sortOrder);}
         self::assertCount(0,(new ReflectionClass($provider))->getConstructor()?->getParameters()??[]);
     }
     #[DataProvider('accessCases')]
@@ -66,11 +66,11 @@ final class CorporateToolsNavigationTest extends TestCase
         $html=$this->render('manager','listedmanager',['finance'=>['listedmanager']]);
         self::assertSame(1,substr_count($html,'id="corporate-tools-title"'));
         foreach(['Finance','Human Resources','Marketing','Admin','Frequently used functions for corporate staff.','aria-label="Corporate tools menu"'] as $value)self::assertStringContainsString($value,$html);
-        self::assertSame(4,substr_count($html,'gateway-navbar__disabled-item'));
+        self::assertSame(3,substr_count($html,'gateway-navbar__disabled-item'));self::assertStringContainsString('href="/human-resources"',$html);
         self::assertLessThan(strpos($html,'id="corporate-tools-title"'),strpos($html,'id="universal-tools-title"'));
         self::assertLessThan(strpos($html,'id="gateway-setup-title"'),strpos($html,'id="corporate-tools-title"'));
         $section=substr($html,(int)strpos($html,'id="corporate-tools"'),(int)strpos($html,'id="gateway-setup-title"')-(int)strpos($html,'id="corporate-tools"'));
-        self::assertStringNotContainsString('<a ',$section);self::assertStringNotContainsString('href=',$section);
+        self::assertSame(1,substr_count($section,'<a '));self::assertStringContainsString('href="/human-resources"',$section);
     }
     public function testNonCorporateDashboardOmitsSectionAndDropdown():void
     {
@@ -85,7 +85,7 @@ final class CorporateToolsNavigationTest extends TestCase
         self::assertStringContainsString('$this->corporateAccess->allows($context)',$service);self::assertStringNotContainsString('jobTitle===',$service);self::assertStringNotContainsString("employeeClass==='corporate'",$service);
         foreach(['Finance','Human Resources','Marketing'] as $definition){self::assertStringNotContainsString($definition,$controller);self::assertStringNotContainsString($definition,$view);}
         self::assertStringNotContainsString('corporate-access.php',$controller);self::assertStringNotContainsString('corporate-access.php',$view);self::assertStringNotContainsString('->employeeClass===',$view);self::assertFileDoesNotExist($root.'/database/migrations/202607270003_corporate_tools.php');
-        self::assertSame([],glob($root.'/public/assets/js/*.js')?:[]);
+        self::assertSame([$root.'/public/assets/js/phone-mask.js'],glob($root.'/public/assets/js/*.js')?:[]);
     }
     /** @param array<string,list<string>> $access */
     private function home(array $access=[]):DashboardHomeService

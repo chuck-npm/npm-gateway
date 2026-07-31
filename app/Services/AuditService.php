@@ -21,6 +21,14 @@ final class AuditService
             'metadata' => $metadata, 'created_at' => $createdAt,
         ]);
     }
+    public function recordProperty(string $eventType,int $userId,int $employeeId,int $propertyId,string $propertyPublicId,string $description,array $metadata,string $createdAt):void
+    {
+        $this->assertSafe($metadata);$this->audits->insert(['public_id'=>$this->publicIds->generate(),'user_id'=>$userId,'employee_id'=>$employeeId,'property_id'=>$propertyId,'event_type'=>$eventType,'entity_type'=>'property','entity_id'=>$propertyId,'entity_public_id'=>$propertyPublicId,'description'=>$description,'metadata'=>$metadata,'created_at'=>$createdAt]);
+    }
+    public function recordSystemProperty(string $eventType,int $propertyId,string $propertyPublicId,string $description,array $metadata,string $createdAt):void
+    {
+        $this->assertSafe($metadata);$this->audits->insert(['public_id'=>$this->publicIds->generate(),'user_id'=>null,'employee_id'=>null,'property_id'=>$propertyId,'event_type'=>$eventType,'entity_type'=>'property','entity_id'=>$propertyId,'entity_public_id'=>$propertyPublicId,'description'=>$description,'metadata'=>$metadata,'created_at'=>$createdAt]);
+    }
     /** @param array<string, mixed> $metadata */
     private function assertSafe(array $metadata): void
     {

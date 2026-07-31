@@ -34,8 +34,8 @@ final class UniversalToolsFrameworkTest extends TestCase
         self::assertCount(12,$first);self::assertEquals($first,$second);
         $keys=array_map(fn(ToolCard $card)=>$card->key,$first);
         self::assertCount(12,array_unique($keys));self::assertSame(['employee-directory','property-information','company-documents','announcements','credit-card-purchases','large-file-transfers','order-supplies','time-off-requests','policies-procedures','training-library','support-requests','help-desk'],$keys);
-        foreach($first as $index=>$card){if($index===0){self::assertTrue($card->enabled);self::assertSame('/employees',$card->route);self::assertSame('employees.index',$card->routeName);self::assertSame('Open directory',$card->footerLabel);}else{self::assertFalse($card->enabled);self::assertNull($card->route);self::assertNull($card->routeName);}self::assertNotSame('',$card->title);self::assertNotSame('',$card->description);self::assertNotSame('',$card->categoryLabel);self::assertSame(($index+1)*10,$card->sortOrder);}
-        self::assertCount(1,array_filter($first,fn(ToolCard $card)=>$card->enabled));
+        foreach($first as $index=>$card){if($index===0){self::assertTrue($card->enabled);self::assertSame('/employees',$card->route);self::assertSame('employees.index',$card->routeName);self::assertSame('Open directory',$card->footerLabel);}elseif($index===1){self::assertTrue($card->enabled);self::assertSame('/properties',$card->route);self::assertSame('properties.index',$card->routeName);self::assertSame('Open properties',$card->footerLabel);}else{self::assertFalse($card->enabled);self::assertNull($card->route);self::assertNull($card->routeName);}self::assertNotSame('',$card->title);self::assertNotSame('',$card->description);self::assertNotSame('',$card->categoryLabel);self::assertSame(($index+1)*10,$card->sortOrder);}
+        self::assertCount(2,array_filter($first,fn(ToolCard $card)=>$card->enabled));
         self::assertCount(0,(new ReflectionClass($provider))->getConstructor()?->getParameters()??[]);
     }
     public function testHomeUsesAuthenticatedEmployeeContextAndTruthfulSummary():void

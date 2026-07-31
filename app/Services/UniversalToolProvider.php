@@ -23,6 +23,7 @@ final class UniversalToolProvider implements UniversalToolProviderInterface
         ];
         return array_map(static fn(array $tool,int $index):ToolCard=>$tool[0]==='employee-directory'
             ?new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Open directory','/employees',true,($index+1)*10,null,'Open Company Directory','employees.index')
-            :new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Not yet enabled',null,false,($index+1)*10,'Planned'),$definitions,array_keys($definitions));
+            :($tool[0]==='property-information'?new ToolCard($tool[0],'Properties','View company property contact and operational information.',$tool[3],'Open properties','/properties',true,($index+1)*10,null,'Open properties','properties.index')
+            :new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Not yet enabled',null,false,($index+1)*10,'Planned')),$definitions,array_keys($definitions));
     }
 }

@@ -47,7 +47,7 @@ $logoutCsrfToken = isset($logoutCsrfToken) ? (string) $logoutCsrfToken : '';
                     </button>
                     <ul class="dropdown-menu gateway-navbar__menu" aria-label="Corporate tools">
                         <?php foreach ($navbarCorporateItems as $corporateItem): ?>
-                        <li><span class="dropdown-item-text gateway-navbar__disabled-item"><?= htmlspecialchars($corporateItem->title,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?><span class="gateway-navbar__planned">Planned</span></span></li>
+                        <?php if($corporateItem->enabled): ?><li><a class="dropdown-item" href="<?= htmlspecialchars((string)$corporateItem->route,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?>"><?= htmlspecialchars($corporateItem->title,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?></a></li><?php else: ?><li><span class="dropdown-item-text gateway-navbar__disabled-item"><?= htmlspecialchars($corporateItem->title,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?><span class="gateway-navbar__planned">Planned</span></span></li><?php endif; ?>
                         <?php endforeach; ?>
                     </ul>
                 </li>

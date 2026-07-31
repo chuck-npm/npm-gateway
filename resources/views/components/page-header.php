@@ -6,8 +6,9 @@ $heading = isset($heading) ? (string) $heading : '';
 $description = isset($description) ? (string) $description : '';
 $eyebrow = isset($eyebrow) ? (string) $eyebrow : '';
 $actionsHtml = isset($actionsHtml) ? (string) $actionsHtml : '';
+$pageHeaderSpacious = isset($pageHeaderSpacious) && $pageHeaderSpacious === true;
 ?>
-<header class="gateway-page-header">
+<header class="gateway-page-header<?= $pageHeaderSpacious?' gateway-page-header--spacious':'' ?>">
     <div class="gateway-page-header__content">
         <?php if ($eyebrow !== ''): ?>
             <span class="gateway-eyebrow"><?= htmlspecialchars($eyebrow, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span>

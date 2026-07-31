@@ -34,6 +34,37 @@ Dashboards present verified facts and truthful empty states; they never invent
 operational data to fill space. Navigation exposes only implemented
 capabilities, and hidden controls never constitute authorization. Authenticated
 identity remains request-scoped, and the presentation layer remains replaceable.
+
+## Property identity and administration
+
+A property is a permanent operational context. Its PropID, two-letter property
+code, and URL slug are separate permanent business identifiers assigned once,
+never reused, and unaffected by renaming. Existing identifiers are manually
+preserved during controlled legacy population. Automatic PropID allocation and
+the future 200-number spacing workflow remain deferred.
+
+Addresses stay structured in storage and are rendered as one escaped,
+copy-friendly directory value. The universal Properties workspace is read-only;
+creation belongs to explicitly username-authorized Human Resources routes.
+Manager display derives from the active employee/property assignment and reads
+`Not assigned` when no assignment exists; manager names are never duplicated in
+property rows.
+
+Corporate is the permanent foundational operational context and uses the same
+property model as communities. Its permanent identity is PropID 1, code CO,
+and slug `corporate`. A transaction-owned, idempotent foundation service creates
+it during Gateway initialization and approved local backfills; split or reused
+identifiers fail closed. Ordinary property administration cannot create,
+deactivate, delete, or change Corporate's identity. Corporate has no leasing
+IVR, while community IVR requirements remain mandatory. Its Manager continues
+to derive only from the authoritative employee assignment relationship.
+
+The authoritative manager is the sole active primary `property_manager`
+assignment whose employee is active. Non-primary assignments represent support,
+floating, temporary, or secondary responsibility and do not populate property
+directories. Database invariants allow at most one active primary manager per
+property and at most one active primary property per employee; applications
+must also validate these rules and translate constraint races safely.
 # Operations-home principles
 
 Gateway home pages prioritize immediate operational access over executive

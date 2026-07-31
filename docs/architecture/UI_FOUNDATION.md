@@ -85,3 +85,22 @@ dependencies are used.
 Company Directory presents universal approved contact information. Restricted
 complete employee records and detail workflows belong to the future Human
 Resources module and are not linked from the directory.
+
+## Properties and Human Resources workspaces
+
+The universal and HR property directories reuse one query service, formatter,
+and table partial. Both show PropID, Name, one complete selectable Address,
+Phone, IVR, and Manager in that order. HR alone appends Action and Add Property.
+Until editing is implemented, its edit glyph is non-interactive, unfocusable,
+and labeled `Editing not yet enabled`.
+
+The Human Resources landing page uses exactly three standard tool cards in
+order: enabled Employees, enabled Properties, and disabled Credit Cards. It has
+no Appliances card and does not add a fourth card for visual symmetry.
+
+Major entity creation uses a dedicated authenticated page rather than an
+overlay. HR property creation lives at `/human-resources/properties/create`,
+with normal breadcrumbs, page context, sectioned responsive form cards, and
+browser scrolling. Validation follows PRG back to that page with a summary,
+field errors, and preserved safe input. Modals remain reserved for small,
+bounded actions such as confirmations and status changes.

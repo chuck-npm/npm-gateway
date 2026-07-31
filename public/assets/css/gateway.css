@@ -109,6 +109,17 @@ body {
 .gateway-employee-name,.gateway-employee-meta { display:block; }
 .gateway-employee-name { color:var(--gateway-navy); }
 .gateway-employee-meta { margin-top:.2rem;color:var(--gateway-muted);font-size:.78rem; }
+.gateway-property-address { user-select:text; }
+.gateway-edit-placeholder { display:inline-flex;align-items:center;justify-content:center;width:2rem;height:2rem;color:var(--gateway-muted);cursor:not-allowed; }
+.gateway-property-table { min-width:68rem; }
+.gateway-property-form-card { max-width:64rem;margin-inline:auto; }
+.gateway-property-form-card .gateway-card__body { padding-block:2rem; }
+.gateway-form-section { margin-top:2rem;padding-top:2rem;border-top:1px solid var(--gateway-border); }
+.gateway-form-section:first-child { margin-top:0;padding-top:0;border-top:0; }
+.gateway-form-section-title { margin:0 0 1.375rem;color:var(--gateway-navy);font-size:1.2rem;font-weight:750;line-height:1.3; }
+.gateway-form-grid { --bs-gutter-x:1.25rem;--bs-gutter-y:1.25rem; }
+.gateway-form-grid .form-text { margin-top:.4rem; }
+.gateway-form-actions { display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--gateway-border); }
 
 /* Foundation page */
 .gateway-panel {
@@ -227,6 +238,10 @@ body {
     display: flex;
     flex: 0 0 auto;
     gap: 0.75rem;
+}
+
+.gateway-page-header--spacious {
+    margin-bottom: 3rem;
 }
 
 /* Cards */
@@ -593,6 +608,7 @@ body {
     .gateway-directory-search__controls,.gateway-directory-filters { grid-template-columns:1fr; }
     .gateway-directory-toolbar__actions { grid-column:auto;flex-wrap:wrap; }
     .gateway-directory-result-count { align-items:flex-start;flex-direction:column; }
+    .gateway-form-actions { align-items:stretch;flex-direction:column-reverse; }
     .gateway-directory-table-wrap { overflow:visible;border:0;background:transparent; }
     .gateway-directory-table { display:block;min-width:0;background:transparent; }
     .gateway-directory-table thead { position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0; }

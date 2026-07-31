@@ -79,12 +79,31 @@ final class SchemaVerifier
         if ($authenticationSecurityApplied) {
             $this->verifyAuthenticationSecuritySchema();
         }
+        if (isset($executed[PropertiesWorkspaceSchema::MIGRATION])) {
+            $this->verifyPropertiesWorkspaceSchema();
+        }
+        if(isset($executed[CorporateContextSchema::MIGRATION])){$this->verifyCorporateContextSchema();}
 
         return [
             'Schema verification passed.',
             sprintf('Executed migrations: %d', count($records)),
             sprintf('Pending migrations: %d', $pending),
         ];
+    }
+
+    private function verifyPropertiesWorkspaceSchema(): void
+    {
+        $metadata=$this->tableMetadata('properties');
+        foreach(PropertiesWorkspaceSchema::COLUMNS as $column){if(!isset($metadata['columns'][$column]))throw new MigrationException("Missing column {$column} on properties.");}
+        foreach(PropertiesWorkspaceSchema::INDEXES as $index){if(!isset($metadata['indexes'][$index]))throw new MigrationException("Missing index {$index} on properties.");}
+        foreach(PropertiesWorkspaceSchema::CHECKS as $check){if(!isset($metadata['checks'][$check]))throw new MigrationException("Missing check constraint {$check} on properties.");}
+        $assignments=$this->tableMetadata('employee_property_assignments');
+        foreach(PropertiesWorkspaceSchema::ASSIGNMENT_COLUMNS as $column){if(!isset($assignments['columns'][$column]))throw new MigrationException("Missing column {$column} on employee_property_assignments.");}
+        foreach(PropertiesWorkspaceSchema::ASSIGNMENT_INDEXES as $index){if(!isset($assignments['indexes'][$index]))throw new MigrationException("Missing index {$index} on employee_property_assignments.");}
+    }
+    private function verifyCorporateContextSchema():void
+    {
+        $statement=$this->connection->prepare('SELECT IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME=\'properties\' AND COLUMN_NAME=\'ivr_number\'');$database=$this->expectedDatabase;$statement->bind_param('s',$database);$statement->execute();$nullable=(string)($statement->get_result()->fetch_row()[0]??'');$statement->close();if($nullable!=='YES')throw new MigrationException('properties.ivr_number must be nullable after Corporate Context migration.');
     }
 
     private function verifyFoundationSchema(bool $authenticationSecurityApplied): void

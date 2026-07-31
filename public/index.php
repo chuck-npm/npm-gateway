@@ -18,6 +18,12 @@ use NpmGateway\Services\EmployeeDirectoryCriteriaFactory;
 use NpmGateway\Services\EmployeeDirectoryService;
 use NpmGateway\Services\CorporateAccessService;
 use NpmGateway\Contracts\CorporateToolsProviderInterface;
+use NpmGateway\Http\Controllers\PropertyWorkspaceController;
+use NpmGateway\Http\Controllers\HumanResourcesController;
+use NpmGateway\Services\PropertyAdministrationService;
+use NpmGateway\Services\PropertyDirectoryCriteriaFactory;
+use NpmGateway\Services\PropertyQueryService;
+use NpmGateway\Support\FlashSession;
 
 $application=require dirname(__DIR__).'/bootstrap/app.php';$root=$application['root'];$environment=(string)$application['config']['app']['environment'];
 $path=parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH);$path=is_string($path)?rtrim($path,'/'):'/';$path=$path===''?'/':$path;
@@ -34,7 +40,9 @@ if(session_status()!==PHP_SESSION_ACTIVE){ini_set('session.use_strict_mode','1')
 $csrf=new CsrfService($_SESSION);$cookie=new SessionCookie($authConfig);$views=$root.'/resources/views';
 $authentication=new AuthenticationController($container->get(AuthenticationService::class),$container->get(SessionService::class),$cookie,$csrf,$views);
 $employees=new EmployeeWorkspaceController($container->get(EmployeeDirectoryCriteriaFactory::class),$container->get(EmployeeDirectoryService::class),$container->get(CorporateAccessService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,$views);
-$kernel=new WebKernel($authentication,new DashboardController($csrf,$container->get(DashboardHomeService::class),$views),new RequireAuthenticationMiddleware($container->get(SessionService::class),$cookie),$employees);
+$properties=new PropertyWorkspaceController($container->get(PropertyDirectoryCriteriaFactory::class),$container->get(PropertyQueryService::class),$container->get(PropertyAdministrationService::class),$container->get(CorporateAccessService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
+$hr=new HumanResourcesController($container->get(CorporateAccessService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,$views);
+$kernel=new WebKernel($authentication,new DashboardController($csrf,$container->get(DashboardHomeService::class),$views),new RequireAuthenticationMiddleware($container->get(SessionService::class),$cookie),$employees,$properties,$hr);
 $request=new Request(strtoupper((string)($_SERVER['REQUEST_METHOD']??'GET')),$path,array_map('strval',$_POST),array_map('strval',$_COOKIE),array_map('strval',$_SERVER),array_map('strval',$_GET));
 $response=$kernel->handle($request,$container->get(ClockInterface::class)->now());http_response_code($response->status);
 foreach($response->headers as $name=>$value)header($name.': '.$value);

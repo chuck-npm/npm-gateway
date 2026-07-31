@@ -14,14 +14,18 @@ Permanent property identity and operational contacts; operational properties are
 
 | Columns | Meaning |
 |---|---|
-| `id`, `public_id` | Internal key and stable public ID. |
-| `property_code`, `slug` | Immutable two-uppercase-letter code and lowercase URL/application ID. |
+| `id`, `public_id`, `prop_id` | Internal relational key, stable non-sequential public ID, and permanent numeric NPM business identifier. |
+| `property_code`, `slug` | Permanent two-uppercase-letter NPM operational code and lowercase URL-safe identifier. |
 | `display_name`, `legal_name`, `status` | Current and optional legal names; active/inactive/sold/archived state. |
-| `manager_email`, `ivr_number`, `website_url` | The property-owned reusable manager mailbox, permanent advertising/IVR number, and optional site. |
+| `office_phone`, `manager_email`, `ivr_number`, `ivr_routing_email`, `website_url` | Community office phone, property-owned manager mailbox, advertising/IVR number, IVR routing mailbox, and optional site. |
 | `address_line_1`, `address_line_2`, `city`, `state`, `postal_code`, `timezone` | Address and IANA timezone; state is two uppercase letters. |
 | `created_at`, `updated_at`, `created_by`, `updated_by` | Timestamps and optional user actors. |
 
-Unique indexes: public ID, property code, slug, manager email, IVR number. Other indexes: status and state/city. Checks: code, slug, status, state, lowercase manager email. Audit actors reference users with RESTRICT. Do not add a generic main phone: IVR belongs to the property; a routed company phone belongs to an employee.
+Unique indexes: public ID, PropID, property code, slug, manager email, IVR number. Other indexes: status and state/city. Checks include positive PropID, code, slug, status, state, and lowercase operational mailboxes. Audit actors reference users with RESTRICT. An ambiguous generic `phone` field remains prohibited: `office_phone` is specifically the community office number, `ivr_number` is the advertising/IVR number, `ivr_routing_email` receives IVR routing messages, and `manager_email` is the property business mailbox.
+
+The five identifiers are distinct and cannot substitute for one another: `id` is the relational database key; `public_id` is the stable non-sequential public identifier; `prop_id` is the permanent numeric NPM business identifier; `property_code` is the permanent two-character operational code; and `slug` is the permanent URL-safe identifier. During controlled legacy population, operators manually preserve the actual PropID, property code, and slug. They are assigned once, never reused, and do not change when a property is renamed. Future automatic PropID allocation using the approved 200-number spacing policy is deferred.
+
+Corporate is Gateway's permanent foundational operational context in `properties`: PropID `1`, property code `CO`, and slug `corporate`. These identities are reserved from ordinary property administration and Corporate cannot be deleted or made inactive through routine workflows. Its approved address is `5021 River Rd., Ste. C, Columbus, GA 31904`; its operational mailbox does not represent an employee manager. Corporate intentionally has no advertising IVR, so `ivr_number` and `ivr_routing_email` are null only for this protected context. Community properties continue to require both values. Corporate is created idempotently during initialization or an approved local backfill, with exact three-identifier conflict detection and no silent overwrites.
 
 ## `employees`
 
@@ -84,6 +88,8 @@ Current and historical property assignments.
 Public ID is unique. Indexes support active employee/property, employee-primary, property-type, and date-range queries. Checks validate type, boolean primary, and date order. Employee, property, and audit foreign keys use RESTRICT.
 
 Corporate employees cannot receive assignments. Managers and floating managers have exactly one active primary and may have secondary assignments; assistant managers may have a primary; maintenance staff may be assigned. The application enforces one active primary transactionally. History is ended, not overwritten/deleted. Assignment does not grant Gateway community access; access stays explicit in `config/community-access.php`.
+
+A property's authoritative directory manager is its sole assignment with `assignment_type = 'property_manager'`, `is_primary = 1`, a null `ends_on`, and an active employee. Generated nullable keys and unique indexes enforce at most one such assignment per property and at most one per employee. Non-primary manager assignments represent supporting, floating, temporary, or secondary responsibility and never determine the directory Manager value. Each manager may have only one active primary property assignment.
 
 ## `audit_logs`
 

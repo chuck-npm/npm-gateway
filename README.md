@@ -351,8 +351,9 @@ logout. Do not alter business data during this check.
 Corporate employees also receive a Corporate Tools section between Universal
 Tools and System Status. Its four priority areas are Finance, Human Resources,
 Marketing, and Admin. The top navigation presents the same broad areas in a
-Corporate dropdown. Until their modules exist, both cards and dropdown entries
-are readable but non-interactive and expose no destination.
+Corporate dropdown. Human Resources is enabled for explicitly authorized users;
+the remaining unimplemented cards and dropdown entries are readable but
+non-interactive and expose no destination.
 
 Corporate visibility is determined by the Gateway corporate-access framework
 through an injected access service. The authenticated user's permanent,
@@ -363,7 +364,7 @@ mailboxes, employee classification, job title, and property assignment do not
 grant application access. Commit 008 uses this decision for presentation
 filtering; final module authorization still belongs in application services
 and middleware. During manual validation,
-confirm the section order, four disabled cards, disabled dropdown entries, and
+confirm the section order, the enabled Human Resources destination, disabled planned entries, and
 mobile navbar behavior at 320, 768, 1280, and 1920 pixels.
 
 ## Company Directory
@@ -411,3 +412,36 @@ and create a new assignment while preserving the same employee and assignment
 history. Corporate is a valid future operational context, but no synthetic
 Corporate property or assignment is created here. Employee photos, avatars,
 photo uploads, and image placeholders are outside the employee module.
+
+## Properties and Human Resources
+
+Every authenticated Gateway user can open the read-only `/properties`
+directory. It presents PropID, name, one copy-friendly formatted address,
+office phone, IVR phone, and the active assigned manager. Human Resources is
+separately enforced through permanent-username membership in
+`config/corporate-access.php`; class, title, email, and assignments do not grant
+access. Its landing page contains Employees, Properties, and a disabled Credit
+Cards card—no Appliances card.
+
+Authorized HR users can create properties at `/human-resources/properties`.
+PropID, the permanent two-letter NPM code, and the lowercase URL slug are
+distinct immutable identifiers manually preserved during initial population.
+Automatic PropID allocation under the future 200-number spacing policy is not
+implemented. Structured addresses remain structured in the database, while
+both directories share one complete escaped display value. Manager names come
+only from active assignments and display `Not assigned` otherwise. Property
+editing, deletion, manager assignment changes, employee creation, and credit
+card workflows remain deferred.
+
+Corporate is seeded as Gateway's foundational operational context using the
+normal property model (PropID 1, code `CO`, slug `corporate`). It appears in
+both property directories, cannot be created through HR property administration,
+and intentionally has no IVR. The idempotent local-only seeder is
+`php bin/gateway seed:corporate-context`; it fails closed on identifier conflicts
+and is also invoked inside future administrator initialization transactions.
+
+Authorized property creation uses the dedicated
+`/human-resources/properties/create` page. Major entity workflows use normal
+page context and scrolling; Bootstrap modals are reserved for smaller bounded
+actions. Validation failures return to the create page with safe values and
+field errors, while successful creation redirects to the HR property directory.

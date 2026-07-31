@@ -50,6 +50,20 @@ use NpmGateway\Services\UserService;
 use NpmGateway\Support\PublicIdGenerator;
 use NpmGateway\Support\SecurePasswordGenerator;
 use NpmGateway\Support\SystemClock;
+use NpmGateway\Contracts\PropertyDirectoryStoreInterface;
+use NpmGateway\Contracts\PropertyStoreInterface;
+use NpmGateway\Contracts\PropertyTransactionInterface;
+use NpmGateway\Database\MySqlPropertyTransaction;
+use NpmGateway\Repositories\PropertyRepository;
+use NpmGateway\Services\PropertyAdministrationService;
+use NpmGateway\Services\PropertyDirectoryCriteriaFactory;
+use NpmGateway\Services\PropertyQueryService;
+use NpmGateway\Services\PropertyValidator;
+use NpmGateway\Support\PhoneFormatter;
+use NpmGateway\Support\PropertyAddressFormatter;
+use NpmGateway\Contracts\CorporateContextStoreInterface;
+use NpmGateway\Services\CorporateContextService;
+use NpmGateway\Services\CorporateContextSeeder;
 final class ServiceProvider
 {
     /** @param array<string, mixed> $application */
@@ -87,12 +101,25 @@ final class ServiceProvider
         $container->set(UniversalToolProviderInterface::class,static fn():UniversalToolProviderInterface=>new UniversalToolProvider());
         $container->set(CorporateToolsProviderInterface::class,static fn():CorporateToolsProviderInterface=>new CorporateToolsProvider());
         $container->set(CorporateAccessService::class,static fn(Container $c):CorporateAccessService=>new CorporateAccessService($c->get('config.corporate-access')));
+        $container->set(PropertyRepository::class,static fn(Container $c):PropertyRepository=>new PropertyRepository($c->get(mysqli::class)));
+        $container->set(PropertyStoreInterface::class,static fn(Container $c):PropertyStoreInterface=>$c->get(PropertyRepository::class));
+        $container->set(PropertyDirectoryStoreInterface::class,static fn(Container $c):PropertyDirectoryStoreInterface=>$c->get(PropertyRepository::class));
+        $container->set(CorporateContextStoreInterface::class,static fn(Container $c):CorporateContextStoreInterface=>$c->get(PropertyRepository::class));
+        $container->set(PropertyTransactionInterface::class,static fn(Container $c):PropertyTransactionInterface=>new MySqlPropertyTransaction($c->get(mysqli::class)));
+        $container->set(PhoneFormatter::class,static fn():PhoneFormatter=>new PhoneFormatter());
+        $container->set(PropertyAddressFormatter::class,static fn():PropertyAddressFormatter=>new PropertyAddressFormatter());
+        $container->set(PropertyDirectoryCriteriaFactory::class,static fn():PropertyDirectoryCriteriaFactory=>new PropertyDirectoryCriteriaFactory());
+        $container->set(PropertyQueryService::class,static fn(Container $c):PropertyQueryService=>new PropertyQueryService($c->get(PropertyDirectoryStoreInterface::class),$c->get(PropertyAddressFormatter::class),$c->get(PhoneFormatter::class)));
+        $container->set(PropertyValidator::class,static fn(Container $c):PropertyValidator=>new PropertyValidator($c->get(PropertyStoreInterface::class),$c->get(PhoneFormatter::class)));
+        $container->set(CorporateContextService::class,static fn(Container $c):CorporateContextService=>new CorporateContextService($c->get(CorporateContextStoreInterface::class),$c->get(PublicIdGenerator::class),$c->get(AuditService::class),$c->get(ClockInterface::class)));
+        $container->set(CorporateContextSeeder::class,static fn(Container $c):CorporateContextSeeder=>new CorporateContextSeeder($c->get(PropertyTransactionInterface::class),$c->get(CorporateContextService::class)));
         $container->set(DashboardHomeService::class,static fn(Container $c):DashboardHomeService=>new DashboardHomeService($c->get(DashboardSummaryService::class),$c->get(UniversalToolProviderInterface::class),$c->get(CorporateToolsProviderInterface::class),$c->get(CorporateAccessService::class)));
         $container->set(InitializationTransactionInterface::class, static fn (Container $c): InitializationTransactionInterface => new MySqlInitializationTransaction($c->get(mysqli::class)));
         $container->set(PasswordService::class, static fn (Container $c): PasswordService => new PasswordService($c->get(PasswordGeneratorInterface::class)));
         $container->set(EmployeeService::class, static fn (Container $c): EmployeeService => new EmployeeService($c->get(EmployeeStoreInterface::class), $c->get(PublicIdGenerator::class)));
         $container->set(UserService::class, static fn (Container $c): UserService => new UserService($c->get(UserStoreInterface::class), $c->get(PublicIdGenerator::class)));
         $container->set(AuditService::class, static fn (Container $c): AuditService => new AuditService($c->get(AuditStoreInterface::class), $c->get(PublicIdGenerator::class)));
+        $container->set(PropertyAdministrationService::class,static fn(Container $c):PropertyAdministrationService=>new PropertyAdministrationService($c->get(PropertyValidator::class),$c->get(PropertyStoreInterface::class),$c->get(PropertyTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(AuditService::class),$c->get(ClockInterface::class)));
         $container->set(NotificationService::class, static fn (Container $c): NotificationService => new NotificationService($c->get(CredentialNotifierInterface::class), $c->get('config.notification')));
         $container->set(SessionService::class,static fn(Container $c):SessionService=>new SessionService($c->get(SessionRepository::class),$c->get(UserStoreInterface::class),$c->get(SessionTokenGeneratorInterface::class),$c->get(AuthenticationHasher::class),$c->get(PublicIdGenerator::class),$c->get(AuthenticationConfig::class),$c->get(AuditService::class)));
         $container->set(LoginThrottleService::class,static fn(Container $c):LoginThrottleService=>new LoginThrottleService($c->get(LoginAttemptRepository::class),$c->get(AuthenticationConfig::class)));
@@ -102,7 +129,7 @@ final class ServiceProvider
         $container->set(SystemInitializationService::class, static fn (Container $c): SystemInitializationService => new SystemInitializationService(
             $c->get(InitializationTransactionInterface::class), $c->get(UserStoreInterface::class), $c->get(EmployeeService::class),
             $c->get(UserService::class), $c->get(PasswordService::class), $c->get(AuditService::class),
-            $c->get(NotificationService::class), $c->get(ClockInterface::class), $c->get('config.notification')
+            $c->get(NotificationService::class), $c->get(ClockInterface::class), $c->get('config.notification'),$c->get(CorporateContextService::class)
         ));
         $container->set(SystemInitializationInterface::class, static fn (Container $c): SystemInitializationInterface => $c->get(SystemInitializationService::class));
         return $container;

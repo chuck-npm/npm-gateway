@@ -7,6 +7,10 @@ return [
     '/logout' => ['methods' => ['POST'], 'controller' => 'authentication'],
     '/dashboard' => ['methods' => ['GET'], 'controller' => 'dashboard', 'middleware' => ['authentication']],
     '/employees' => ['name' => 'employees.index', 'methods' => ['GET'], 'controller' => 'employee-workspace', 'middleware' => ['authentication']],
+    '/properties' => ['name'=>'properties.index','methods'=>['GET'],'controller'=>'property-workspace','middleware'=>['authentication']],
+    '/human-resources' => ['name'=>'hr.index','methods'=>['GET'],'controller'=>'human-resources','middleware'=>['authentication','corporate-access']],
+    '/human-resources/properties' => ['names'=>['GET'=>'hr.properties.index','POST'=>'hr.properties.store'],'methods'=>['GET','POST'],'controller'=>'property-workspace','middleware'=>['authentication','corporate-access']],
+    '/human-resources/properties/create' => ['name'=>'hr.properties.create','methods'=>['GET'],'controller'=>'property-workspace','middleware'=>['authentication','corporate-access']],
     '/component-showcase' => [
         'view' => 'pages/component-showcase.php',
         'environments' => ['local', 'development'],

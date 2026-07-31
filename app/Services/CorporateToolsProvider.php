@@ -13,6 +13,6 @@ final class CorporateToolsProvider implements CorporateToolsProviderInterface
             ['marketing','Marketing','Manage property websites, advertising, leads, announcements, and marketing resources.','Marketing'],
             ['admin','Admin','Manage properties, Gateway users, assignments, and system configuration.','Administration'],
         ];
-        return array_map(static fn(array $tool,int $index):ToolCard=>new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Module planned',null,false,($index+1)*10,'Planned'),$definitions,array_keys($definitions));
+        return array_map(static fn(array $tool,int $index):ToolCard=>$tool[0]==='human-resources'?new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Open Human Resources','/human-resources',true,($index+1)*10,null,null,'hr.index'):new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Module planned',null,false,($index+1)*10,'Planned'),$definitions,array_keys($definitions));
     }
 }

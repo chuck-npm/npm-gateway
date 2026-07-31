@@ -24,7 +24,8 @@ final class SystemInitializationService implements SystemInitializationInterface
         private readonly AuditService $auditService,
         private readonly NotificationService $notificationService,
         private readonly ClockInterface $clock,
-        private readonly array $notificationConfig
+        private readonly array $notificationConfig,
+        private readonly ?CorporateContextService $corporateContext=null
     ) {}
     public function initialize(InitializeAdministratorRequest $request): InitializeAdministratorResult
     {
@@ -45,6 +46,7 @@ final class SystemInitializationService implements SystemInitializationInterface
                 $credential = $this->passwordService->generate();
                 $employee = $this->employeeService->createBootstrapCorporate($request, $now->format('Y-m-d'));
                 $user = $this->userService->createBootstrapUser((int) $employee['id'], $request->username, $credential->passwordHash, $timestamp);
+                $this->corporateContext?->ensure('gateway-initialization');
                 $this->auditService->record(
                     'system.administrator_initialized', (int) $user['id'], (int) $employee['id'],
                     (string) $user['public_id'], 'Initial corporate administrator created.',
