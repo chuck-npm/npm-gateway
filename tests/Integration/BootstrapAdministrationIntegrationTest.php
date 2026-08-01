@@ -227,13 +227,13 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
                     $assignmentPublicId=$ids->generate();$assignment=$connection->prepare("INSERT INTO employee_property_assignments (public_id,employee_id,property_id,assignment_type,is_primary,starts_on) VALUES (?,?,?,?,?,'2026-07-28')");
                     $assignment->bind_param('siisi',$assignmentPublicId,$employeeId,$propertyDatabaseId,$assignmentType,$primary);$assignment->execute();$assignment->close();
                 }
-                $directory=new EmployeeDirectoryService(new EmployeeRepository($connection));$beforeReads=['employees'=>self::rowCount($connection,'employees'),'users'=>self::rowCount($connection,'users'),'assignments'=>self::rowCount($connection,'employee_property_assignments'),'audit_logs'=>self::rowCount($connection,'audit_logs')];
+                $directory=new EmployeeDirectoryService(new EmployeeRepository($connection),new \NpmGateway\Support\PhoneFormatter());$beforeReads=['employees'=>self::rowCount($connection,'employees'),'users'=>self::rowCount($connection,'users'),'assignments'=>self::rowCount($connection,'employee_property_assignments'),'audit_logs'=>self::rowCount($connection,'audit_logs')];
                 $allEmployees=$directory->search(new EmployeeDirectoryCriteria());self::assertSame(3,$allEmployees->totalResults);
-                $byNumber=$directory->search(new EmployeeDirectoryCriteria('NPM999996'));self::assertSame(1,$byNumber->totalResults);self::assertSame('None',$byNumber->employees[0]->gatewayAccessStatus);
-                $byName=$directory->search(new EmployeeDirectoryCriteria('Integration Manager'));self::assertSame(1,$byName->totalResults);self::assertSame('Active',$byName->employees[0]->gatewayAccessStatus);self::assertSame('Integration Test Property',$byName->employees[0]->primaryPropertyName);
+                $byNumber=$directory->search(new EmployeeDirectoryCriteria('NPM999996'));self::assertSame(1,$byNumber->totalResults);self::assertSame('none',$byNumber->employees[0]->gatewayAccessState);
+                $byName=$directory->search(new EmployeeDirectoryCriteria('Integration Manager'));self::assertSame(1,$byName->totalResults);self::assertSame('enabled',$byName->employees[0]->gatewayAccessState);self::assertSame('Integration Test Property',$byName->employees[0]->primaryPropertyName);
                 $byTitle=$directory->search(new EmployeeDirectoryCriteria('Maintenance Technician'));self::assertSame(1,$byTitle->totalResults);
                 $byProperty=$directory->search(new EmployeeDirectoryCriteria('Integration Test Property'));self::assertSame(2,$byProperty->totalResults);
-                $maintenance=$directory->search(new EmployeeDirectoryCriteria('','maintenance'));self::assertSame(1,$maintenance->totalResults);self::assertSame('None',$maintenance->employees[0]->gatewayAccessStatus);
+                $maintenance=$directory->search(new EmployeeDirectoryCriteria('','maintenance'));self::assertSame(1,$maintenance->totalResults);self::assertSame('none',$maintenance->employees[0]->gatewayAccessState);
                 self::assertNull($maintenance->employees[0]->businessEmail);self::assertNull($maintenance->employees[0]->companyPhone);
                 self::assertSame($beforeReads,['employees'=>self::rowCount($connection,'employees'),'users'=>self::rowCount($connection,'users'),'assignments'=>self::rowCount($connection,'employee_property_assignments'),'audit_logs'=>self::rowCount($connection,'audit_logs')]);
             } finally {

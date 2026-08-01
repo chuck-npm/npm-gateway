@@ -107,3 +107,6 @@ bounded actions such as confirmations and status changes.
 ### Add Employee
 
 Major employee creation uses a dedicated authenticated page, never a modal. It follows the Add Property card, section separator, responsive two-column grid, validation summary, field-error, and bottom action-footer conventions. Cancel is a normal link; Create Employee is the only submit action. Employee number and password are generated and therefore not inputs. Both phone fields use the shared `data-phone-mask` behavior, and the editable username suggestion begins with the normalized lowercase first name without overwriting manual changes.
+## Restricted HR employee form
+
+The Add Employee form collects required Date of Birth using a date input without a default. Personal phone, personal email, and Employee Notes are visibly optional. Personal phone retains progressive-enhancement masking, and the form remains usable without JavaScript. Date of Birth and optional private fields do not appear in directory, dashboard, or property UI.

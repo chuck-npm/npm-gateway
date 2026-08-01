@@ -84,6 +84,7 @@ final class SchemaVerifier
         }
         if(isset($executed[CorporateContextSchema::MIGRATION])){$this->verifyCorporateContextSchema();}
         if(isset($executed[EmployeeAdministrationSchema::MIGRATION])){$this->verifyEmployeeAdministrationSchema();}
+        if(isset($executed[EmployeeDateOfBirthSchema::MIGRATION])){$this->verifyEmployeeDateOfBirthSchema();}
 
         return [
             'Schema verification passed.',
@@ -114,6 +115,15 @@ final class SchemaVerifier
         if(($columns['start_date']['COLUMN_TYPE']??'')!=='date'||($columns['start_date']['IS_NULLABLE']??'')!=='NO')throw new MigrationException('employees.start_date must be DATE NOT NULL.');
         if(($columns['comments']['COLUMN_TYPE']??'')!=='text'||($columns['comments']['IS_NULLABLE']??'')!=='YES')throw new MigrationException('employees.comments must be nullable TEXT.');
         $indexes=$this->tableMetadata('employees')['indexes'];if(!isset($indexes['idx_employees_start_date'])||isset($indexes['idx_employees_hire_date']))throw new MigrationException('Employee start-date index is invalid.');
+    }
+    private function verifyEmployeeDateOfBirthSchema():void
+    {
+        $statement=$this->connection->prepare("SELECT COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE,ORDINAL_POSITION FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME='employees' AND COLUMN_NAME IN ('date_of_birth','dob','birth_date','birthday','age','preferred_name')");
+        $database=$this->expectedDatabase;$statement->bind_param('s',$database);$statement->execute();$result=$statement->get_result();$columns=[];while($row=$result->fetch_assoc())$columns[(string)$row['COLUMN_NAME']]=$row;$statement->close();
+        if(($columns['date_of_birth']['COLUMN_TYPE']??'')!=='date'||($columns['date_of_birth']['IS_NULLABLE']??'')!=='YES')throw new MigrationException('employees.date_of_birth must be nullable DATE.');
+        foreach(['dob','birth_date','birthday','age'] as $forbidden)if(isset($columns[$forbidden]))throw new MigrationException("employees.{$forbidden} is a forbidden duplicate or derived Date of Birth field.");
+        if((int)($columns['date_of_birth']['ORDINAL_POSITION']??0)!==(int)($columns['preferred_name']['ORDINAL_POSITION']??-1)+1)throw new MigrationException('employees.date_of_birth must appear after preferred_name.');
+        if(isset($this->tableMetadata('employees')['indexes']['idx_employees_date_of_birth']))throw new MigrationException('employees.date_of_birth must not have a general-purpose index.');
     }
 
     private function verifyFoundationSchema(bool $authenticationSecurityApplied,bool $employeeAdministrationApplied): void

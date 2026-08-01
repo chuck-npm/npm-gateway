@@ -9,6 +9,7 @@ use NpmGateway\Services\CorporateAccessService;
 use NpmGateway\Services\CorporateToolsProvider;
 use NpmGateway\Services\EmployeeDirectoryCriteriaFactory;
 use NpmGateway\Services\EmployeeDirectoryService;
+use NpmGateway\Support\PhoneFormatter;
 use NpmGateway\ValueObjects\AuthenticatedUser;
 use NpmGateway\ValueObjects\EmployeeDirectoryCriteria;
 use PHPUnit\Framework\TestCase;
@@ -25,8 +26,8 @@ final class EmployeeWorkspaceTest extends TestCase
     }
     public function testServiceReturnsTypedPrivacyBoundedDirectoryResults():void
     {
-        $store=new FakeEmployeeDirectoryStore();$service=new EmployeeDirectoryService($store);$page=$service->search(new EmployeeDirectoryCriteria());
-        self::assertSame(1,$page->totalResults);self::assertCount(1,$page->employees);self::assertSame('Active',$page->employees[0]->gatewayAccessStatus);self::assertTrue((new ReflectionClass($page))->isReadOnly());
+        $store=new FakeEmployeeDirectoryStore();$service=new EmployeeDirectoryService($store,new PhoneFormatter());$page=$service->search(new EmployeeDirectoryCriteria());
+        self::assertSame(1,$page->totalResults);self::assertCount(1,$page->employees);self::assertSame('enabled',$page->employees[0]->gatewayAccessState);self::assertSame('(570) 213-3312',$page->employees[0]->companyPhone);self::assertTrue((new ReflectionClass($page))->isReadOnly());
         foreach(['personalEmail','personalPhone','passwordHash','sessionToken','id','startsOn','assignments'] as $field)self::assertFalse(property_exists($page->employees[0],$field));
     }
     public function testControllerRendersApprovedReadOnlyWorkspaceAndProfile():void
@@ -34,7 +35,7 @@ final class EmployeeWorkspaceTest extends TestCase
         $state=[];$controller=$this->controller($state);$context=new AuthenticatedRequestContext($this->user(),'TEST-token');
         $index=$controller->index(new Request('GET','/employees',[],[],[],['search'=>'Test']),$context);
         self::assertSame(200,$index->status);
-        foreach(['Company Directory','Find employee contact information quickly.','placeholder="Enter an employee name"','method="get" action="/employees"','Operational Context','Company Phone','Business Email','Gateway Access','work@example.test','+1555010100','method="post" action="/logout"'] as $expected)self::assertStringContainsString($expected,$index->body);
+        foreach(['Company Directory','Find employee contact information quickly.','placeholder="Enter an employee name"','method="get" action="/employees"','Operational Context','Company Phone','Business Email','Gateway Access','work@example.test','(570) 213-3312','gateway-status gateway-status--success','Enabled','>Active<','method="post" action="/logout"'] as $expected)self::assertStringContainsString($expected,$index->body);self::assertStringNotContainsString('5702133312',$index->body);self::assertStringNotContainsString('style=',$index->body);
         self::assertLessThan(strpos($index->body,'id="employee-class"'),strpos($index->body,'id="employee-search"'));
         foreach(['Employee Workspace','NPM000001','personal_email','personal phone','password_hash','Add Employee','Edit Employee','Delete','Export Employees','<img','avatar','TEST-token','>View<','data-label="Action"'] as $forbidden)self::assertStringNotContainsString($forbidden,$index->body);
     }
@@ -59,12 +60,12 @@ final class EmployeeWorkspaceTest extends TestCase
     /** @param array<string,mixed> $state */
     private function controller(array &$state):EmployeeWorkspaceController
     {
-        return new EmployeeWorkspaceController(new EmployeeDirectoryCriteriaFactory(),new EmployeeDirectoryService(new FakeEmployeeDirectoryStore()),new CorporateAccessService([]),new CorporateToolsProvider(),new CsrfService($state),dirname(__DIR__,2).'/resources/views');
+        return new EmployeeWorkspaceController(new EmployeeDirectoryCriteriaFactory(),new EmployeeDirectoryService(new FakeEmployeeDirectoryStore(),new PhoneFormatter()),new CorporateAccessService([]),new CorporateToolsProvider(),new CsrfService($state),dirname(__DIR__,2).'/resources/views');
     }
     private function user():AuthenticatedUser{return new AuthenticatedUser(1,2,str_repeat('U',26),str_repeat('E',26),'tester','Test User','Tester','manager');}
 }
 final class FakeEmployeeDirectoryStore implements EmployeeDirectoryStoreInterface
 {
-    public function searchDirectory(EmployeeDirectoryCriteria $criteria):array{return [['employee_public_id'=>str_repeat('A',26),'employee_number'=>'NPM000001','display_name'=>'Test Employee','job_title'=>'Tester','employee_class'=>'manager','employment_status'=>'active','business_email'=>'work@example.test','company_phone'=>'+1555010100','primary_property_name'=>'Not assigned','gateway_access_status'=>'Active']];}
+    public function searchDirectory(EmployeeDirectoryCriteria $criteria):array{return [['employee_public_id'=>str_repeat('A',26),'employee_number'=>'NPM000001','display_name'=>'Test Employee','job_title'=>'Tester','employee_class'=>'manager','employment_status'=>'active','business_email'=>'work@example.test','company_phone'=>'5702133312','primary_property_name'=>'Not assigned','gateway_access_state'=>'enabled']];}
     public function countDirectoryResults(EmployeeDirectoryCriteria $criteria):int{return 1;}
 }

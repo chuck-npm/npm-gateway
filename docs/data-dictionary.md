@@ -1,6 +1,6 @@
 # NPM Gateway Data Dictionary
 
-Version 1.1 — Foundation migration `202607270001_foundation` and Authentication Security migration `202607270002_authentication_security`.
+Version 1.2 — Foundation through Employee Date of Birth migration `202608010006_employee_date_of_birth`.
 
 > **No migration may modify an existing business table unless the data dictionary is updated as part of the same change.**
 
@@ -36,10 +36,11 @@ Retained corporate, manager/assistant-manager, and maintenance history. Employee
 | `id`, `public_id`, `employee_number` | Internal/public IDs and permanent application-generated `NPM` plus six digits. |
 | `employee_class` | corporate, manager, or maintenance. |
 | `first_name`, `middle_name`, `last_name`, `preferred_name` | Person names. |
+| `date_of_birth` | Nullable `DATE` containing restricted HR Date of Birth data. Legacy and imported rows may remain null; the HR Add Employee workflow requires an ISO calendar date for new records. Age is never stored. |
 | `business_email`, `personal_email`, `company_phone`, `personal_phone` | Optional contact channels. |
 | `job_title`, `employment_status` | Title and active/leave/inactive/terminated state. |
 | `start_date`, `termination_date`, `supervisor_employee_id` | Required NPM employment start date (which may predate the Gateway record), termination date, and optional employee supervisor. `start_date` replaces the former `hire_date` terminology. |
-| `comments` | Nullable plain-text internal Employee Notes. Historical/imported records may be null; Add Employee requires a non-empty value. HR-restricted and excluded from universal directories, logs, and ordinary audit metadata. |
+| `comments` | Nullable plain-text internal Employee Notes. Blank Add Employee submissions persist as null. HR-restricted and excluded from universal directories, logs, and ordinary audit metadata. |
 | `created_at`, `updated_at`, `created_by`, `updated_by` | Timestamps and optional user actors. |
 
 Unique indexes: public ID, employee number, nullable business email. Other indexes: name, class/status, supervisor, hire date. Checks: number, class, status, lowercase emails, valid termination order. Foreign keys: supervisor self-reference and user audit actors, all RESTRICT.
@@ -62,6 +63,8 @@ The universal Company Directory exposes only approved contact and operational
 summary fields. Complete employee records, dates, history, detailed
 assignments, notes, documents, and personnel workflows belong to restricted
 Human Resources services and are not exposed through a universal detail route.
+
+Date of Birth, personal phone, personal email, and Employee Notes are restricted HR data and never enter universal or HR directory tables, general search, URLs, logs, success messages, or ordinary audit metadata. Birthday reminders are a future feature derived from month/day for active employees only; general reminders must not expose birth year or age, and no age or separate birthday field is stored.
 
 ## `users`
 

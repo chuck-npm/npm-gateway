@@ -25,6 +25,7 @@ final class ComponentRenderingTest extends TestCase
             'navbar',
             'pagination',
             'status-badge',
+            'gateway-access-badge',
             'dashboard-card',
         ] as $component) {
             yield $component => [$component];
@@ -63,6 +64,13 @@ final class ComponentRenderingTest extends TestCase
 
         self::assertStringContainsString($trustedMarkup, $output);
     }
+
+    #[DataProvider('gatewayAccessCases')]
+    public function testGatewayAccessBadgeUsesApprovedAccessibleTextAndTreatment(string $state,string $label,string $type):void
+    {
+        $output=$this->renderComponent('gateway-access-badge',['gatewayAccessState'=>$state]);self::assertStringContainsString('gateway-status gateway-status--'.$type,$output);self::assertStringContainsString('>'.$label.'<',$output);self::assertStringNotContainsString('style=',$output);
+    }
+    public static function gatewayAccessCases():iterable{yield 'enabled'=>['enabled','Enabled','success'];yield 'disabled'=>['disabled','Disabled','warning'];yield 'none'=>['none','None','neutral'];yield 'untrusted'=>['<script>','None','neutral'];}
 
     /**
      * @param array<string, mixed> $variables

@@ -22,15 +22,15 @@ final class EmployeeRepository implements EmployeeStoreInterface,EmployeeDirecto
     {
         $statement = $this->connection->prepare(
             'INSERT INTO employees
-             (public_id, employee_number, employee_class, first_name, last_name, business_email,
+             (public_id, employee_number, employee_class, first_name, last_name, date_of_birth, business_email,
               personal_email, company_phone, personal_phone, job_title, employment_status, start_date, comments, created_by, updated_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $comments=$employee['comments']??null;$createdBy=$employee['created_by']??null;$updatedBy=$employee['updated_by']??null;
         $statement->bind_param(
-            'sssssssssssssii',
+            'ssssssssssssssii',
             $employee['public_id'], $employee['employee_number'], $employee['employee_class'],
-            $employee['first_name'], $employee['last_name'], $employee['business_email'],
+            $employee['first_name'], $employee['last_name'], $employee['date_of_birth'], $employee['business_email'],
             $employee['personal_email'], $employee['company_phone'], $employee['personal_phone'],
             $employee['job_title'], $employee['employment_status'], $employee['start_date'], $comments,
             $createdBy,$updatedBy
@@ -49,7 +49,7 @@ final class EmployeeRepository implements EmployeeStoreInterface,EmployeeDirecto
             COALESCE((SELECT p.display_name FROM employee_property_assignments a JOIN properties p ON p.id=a.property_id WHERE a.employee_id=e.id AND a.ends_on IS NULL AND a.is_primary=1 ORDER BY a.starts_on DESC LIMIT 1),
               CASE WHEN e.employee_class='corporate' THEN 'Corporate' ELSE NULL END,
               CASE WHEN EXISTS(SELECT 1 FROM employee_property_assignments a2 WHERE a2.employee_id=e.id AND a2.ends_on IS NULL) THEN 'Multiple properties' ELSE 'Not assigned' END) primary_property_name,
-            CASE WHEN u.id IS NULL THEN 'None' WHEN u.status='active' THEN 'Active' ELSE 'Inactive' END gateway_access_status
+            CASE WHEN u.id IS NULL THEN 'none' WHEN u.status='active' THEN 'enabled' ELSE 'disabled' END gateway_access_state
             FROM employees e LEFT JOIN users u ON u.employee_id=e.id {$where} ORDER BY {$order} {$direction}, e.employee_number ASC LIMIT ? OFFSET ?";
         $params[]=$criteria->perPage;$params[]=$offset;$types.='ii';$statement=$this->connection->prepare($sql);$this->bind($statement,$types,$params);$statement->execute();$rows=$statement->get_result()->fetch_all(MYSQLI_ASSOC);$statement->close();return $rows;
     }

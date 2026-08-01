@@ -102,7 +102,7 @@ final class ServiceProvider
         $container->set(HrEmployeeStoreInterface::class,static fn(Container $c):HrEmployeeStoreInterface=>$c->get(EmployeeRepository::class));
         $container->set(EmployeeDirectoryStoreInterface::class,static fn(Container $c):EmployeeDirectoryStoreInterface=>$c->get(EmployeeRepository::class));
         $container->set(EmployeeDirectoryCriteriaFactory::class,static fn():EmployeeDirectoryCriteriaFactory=>new EmployeeDirectoryCriteriaFactory());
-        $container->set(EmployeeDirectoryService::class,static fn(Container $c):EmployeeDirectoryService=>new EmployeeDirectoryService($c->get(EmployeeDirectoryStoreInterface::class)));
+        $container->set(EmployeeDirectoryService::class,static fn(Container $c):EmployeeDirectoryService=>new EmployeeDirectoryService($c->get(EmployeeDirectoryStoreInterface::class),$c->get(PhoneFormatter::class)));
         $container->set(UserStoreInterface::class, static fn (Container $c): UserStoreInterface => new UserRepository($c->get(mysqli::class)));
         $container->set(AuditStoreInterface::class, static fn (Container $c): AuditStoreInterface => new AuditRepository($c->get(mysqli::class)));
         $container->set(SessionRepository::class,static fn(Container $c):SessionRepository=>new SessionRepository($c->get(mysqli::class)));
@@ -128,7 +128,7 @@ final class ServiceProvider
         $container->set(DashboardHomeService::class,static fn(Container $c):DashboardHomeService=>new DashboardHomeService($c->get(DashboardSummaryService::class),$c->get(UniversalToolProviderInterface::class),$c->get(CorporateToolsProviderInterface::class),$c->get(CorporateAccessService::class)));
         $container->set(InitializationTransactionInterface::class, static fn (Container $c): InitializationTransactionInterface => new MySqlInitializationTransaction($c->get(mysqli::class)));
         $container->set(PasswordService::class, static fn (Container $c): PasswordService => new PasswordService($c->get(PasswordGeneratorInterface::class)));
-        $container->set(HrEmployeeValidator::class,static fn(Container $c):HrEmployeeValidator=>new HrEmployeeValidator($c->get(HrEmployeeStoreInterface::class),$c->get(UserStoreInterface::class),$c->get(PhoneFormatter::class)));
+        $container->set(HrEmployeeValidator::class,static fn(Container $c):HrEmployeeValidator=>new HrEmployeeValidator($c->get(HrEmployeeStoreInterface::class),$c->get(UserStoreInterface::class),$c->get(PhoneFormatter::class),$c->get(ClockInterface::class)));
         $container->set(HrEmployeeNotificationService::class,static fn(Container $c):HrEmployeeNotificationService=>new HrEmployeeNotificationService($c->get(HrEmployeeNotifierInterface::class),$c->get('config.hr-employee-notification')));
         $container->set(HrEmployeeCreationService::class,static fn(Container $c):HrEmployeeCreationService=>new HrEmployeeCreationService($c->get(HrEmployeeValidator::class),$c->get(HrEmployeeStoreInterface::class),$c->get(InitializationTransactionInterface::class),$c->get(UserService::class),$c->get(PasswordService::class),$c->get(AuditService::class),$c->get(HrEmployeeNotificationService::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get('config.hr-employee-notification')));
         $container->set(EmployeeService::class, static fn (Container $c): EmployeeService => new EmployeeService($c->get(EmployeeStoreInterface::class), $c->get(PublicIdGenerator::class)));
