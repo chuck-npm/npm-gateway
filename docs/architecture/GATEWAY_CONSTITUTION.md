@@ -127,3 +127,8 @@ HR employee creation is explicitly authorized through `CorporateAccessService` a
 Age is never stored. A future birthday reminder may derive month and day from `date_of_birth` for active employees only, without exposing birth year or age in general reminders. No separate birthday column or reminder workflow is authorized here.
 
 The production notification transport is an injected PHPMailer SMTP adapter using authenticated TLS with platform CA verification. Unencrypted modes and an incorrect sender are rejected before employee-number allocation. Transport failures are reduced to a safe domain error; raw SMTP errors, credentials, recipients, bodies, and passwords are not logged or exposed. Because the original initial password cannot be recovered from its hash after a failed post-commit send, a future authorized reset workflow—not plaintext retry storage—is the recovery design.
+# Corporate category authorization
+
+Corporate cards are universally visible to authenticated users, while destinations and controllers are authorized solely through database-backed category membership. Category configuration defines the fixed vocabulary and display labels only; it must never contain executable username membership lists. Employee class, title, email, assignment, and username do not confer access. Inactive users are denied without deleting their memberships.
+
+Migration 007 is schema-only. Legacy membership backfill is a guarded, transactional, auditable local command. Fresh administrator bootstrap creates all five memberships atomically. Administration must preserve at least one active Admin and must prevent the acting administrator from removing their own Admin membership.

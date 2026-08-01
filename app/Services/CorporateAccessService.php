@@ -1,21 +1,20 @@
 <?php
 declare(strict_types=1);
 namespace NpmGateway\Services;
+use NpmGateway\Contracts\CategoryAccessStoreInterface;
 use NpmGateway\Http\AuthenticatedRequestContext;
 final class CorporateAccessService
 {
-    /** @param array<string,list<string>> $access */
-    public function __construct(private readonly array $access) {}
-    public function allows(?AuthenticatedRequestContext $context):bool
+    private readonly ?CategoryAccessStoreInterface $access;
+    private readonly array $categories;
+    public function __construct(CategoryAccessStoreInterface|array|null $access=null,array $categories=[])
     {
-        if($context===null)return false;
-        $username=strtolower(trim($context->user->username));
-        if(preg_match('/^[a-z][a-z0-9]{1,49}$/',$username)!==1)return false;
-        foreach($this->access as $members){
-            foreach($members as $member){
-                if(hash_equals(strtolower(trim($member)),$username))return true;
-            }
-        }
-        return false;
+        if(is_array($access)&&$access!==[])throw new \InvalidArgumentException('Username-based Corporate access configuration is not supported.');
+        $this->access=$access instanceof CategoryAccessStoreInterface?$access:null;$this->categories=$categories;
     }
+    public function canAccessCategory(?AuthenticatedRequestContext $context,string $category):bool
+    {
+        $category=strtolower(trim($category));if($context===null||$this->access===null||preg_match('/^[a-z][a-z0-9-]*$/',$category)!==1||!array_key_exists($category,$this->categories))return false;return $this->access->hasEffectiveMembership($context->user->id,$category);
+    }
+    public function hasAnyCorporateAccess(?AuthenticatedRequestContext $context):bool{foreach(array_keys($this->categories) as $category)if($this->canAccessCategory($context,(string)$category))return true;return false;}
 }

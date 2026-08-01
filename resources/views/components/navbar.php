@@ -6,7 +6,6 @@ $navbarBrand = isset($navbarBrand) ? (string) $navbarBrand : 'NPM Gateway';
 $navbarBrandUrl = isset($navbarBrandUrl) ? (string) $navbarBrandUrl : '/';
 $navbarItems = isset($navbarItems) && is_array($navbarItems) ? $navbarItems : [];
 $navbarCorporateItems = isset($navbarCorporateItems) && is_array($navbarCorporateItems) ? $navbarCorporateItems : [];
-$showCorporateTools = isset($showCorporateTools) && $showCorporateTools === true;
 $navbarUserLabel = isset($navbarUserLabel) ? (string) $navbarUserLabel : 'User menu';
 $navbarUserContext = isset($navbarUserContext) ? (string) $navbarUserContext : '';
 $logoutCsrfToken = isset($logoutCsrfToken) ? (string) $logoutCsrfToken : '';
@@ -38,7 +37,7 @@ $logoutCsrfToken = isset($logoutCsrfToken) ? (string) $logoutCsrfToken : '';
                         </a>
                     </li>
                 <?php endforeach; ?>
-                <?php if ($showCorporateTools && $navbarCorporateItems !== []): ?>
+                <?php if ($navbarCorporateItems !== []): ?>
                 <li class="nav-item dropdown gateway-navbar__item gateway-navbar__corporate">
                     <button class="nav-link dropdown-toggle gateway-navbar__link gateway-navbar__corporate-toggle"
                             type="button" data-bs-toggle="dropdown" aria-expanded="false"
@@ -47,7 +46,7 @@ $logoutCsrfToken = isset($logoutCsrfToken) ? (string) $logoutCsrfToken : '';
                     </button>
                     <ul class="dropdown-menu gateway-navbar__menu" aria-label="Corporate tools">
                         <?php foreach ($navbarCorporateItems as $corporateItem): ?>
-                        <?php if($corporateItem->enabled): ?><li><a class="dropdown-item" href="<?= htmlspecialchars((string)$corporateItem->route,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?>"><?= htmlspecialchars($corporateItem->title,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?></a></li><?php else: ?><li><span class="dropdown-item-text gateway-navbar__disabled-item"><?= htmlspecialchars($corporateItem->title,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?><span class="gateway-navbar__planned">Planned</span></span></li><?php endif; ?>
+                        <?php if($corporateItem->enabled): ?><li><a class="dropdown-item" href="<?= htmlspecialchars((string)$corporateItem->route,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?>"><?= htmlspecialchars($corporateItem->title,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?></a></li><?php else: ?><li><span class="dropdown-item-text gateway-navbar__disabled-item" aria-disabled="true"><?= htmlspecialchars($corporateItem->title,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?><span class="gateway-navbar__planned"><?= htmlspecialchars($corporateItem->footerLabel,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?></span></span></li><?php endif; ?>
                         <?php endforeach; ?>
                     </ul>
                 </li>

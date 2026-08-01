@@ -1,106 +1,53 @@
 <?php
 declare(strict_types=1);
 use NpmGateway\Contracts\DashboardSummaryStoreInterface;
+use NpmGateway\Contracts\CategoryAccessStoreInterface;
 use NpmGateway\Http\AuthenticatedRequestContext;
 use NpmGateway\Http\Controllers\DashboardController;
 use NpmGateway\Security\CsrfService;
-use NpmGateway\Services\CorporateToolsProvider;
 use NpmGateway\Services\CorporateAccessService;
+use NpmGateway\Services\CorporateToolsProvider;
 use NpmGateway\Services\DashboardHomeService;
 use NpmGateway\Services\DashboardSummaryService;
 use NpmGateway\Services\UniversalToolProvider;
 use NpmGateway\ValueObjects\AuthenticatedUser;
-use NpmGateway\ValueObjects\ToolCard;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 final class CorporateToolsNavigationTest extends TestCase
 {
-    public function testProviderReturnsExactlyFourDeterministicDisabledCards():void
-    {
-        $provider=new CorporateToolsProvider();$first=$provider->tools();
-        self::assertCount(4,$first);self::assertEquals($first,$provider->tools());
-        self::assertSame(['finance','human-resources','marketing','admin'],array_map(fn(ToolCard $card)=>$card->key,$first));
-        self::assertSame(['Finance','Human Resources','Marketing','Admin'],array_map(fn(ToolCard $card)=>$card->title,$first));
-        self::assertCount(4,array_unique(array_map(fn(ToolCard $card)=>$card->key,$first)));
-        foreach($first as $index=>$card){if($card->key==='human-resources'){self::assertTrue($card->enabled);self::assertSame('/human-resources',$card->route);self::assertSame('hr.index',$card->routeName);}else{self::assertFalse($card->enabled);self::assertNull($card->route);}self::assertNotSame('',$card->description);self::assertSame(($index+1)*10,$card->sortOrder);}
-        self::assertCount(0,(new ReflectionClass($provider))->getConstructor()?->getParameters()??[]);
-    }
     #[DataProvider('accessCases')]
-    public function testCorporateAccessFrameworkAloneFiltersPresentation(string $class,string $jobTitle,string $username,array $configured,int $expected):void
+    public function testCategoryAccessUsesOnlyValidatedPermanentUsername(?AuthenticatedRequestContext $context,string $category,bool $expected):void
     {
-        $user=$this->user($class,$username,$jobTitle);$home=$this->home($configured)->forRequest(new AuthenticatedRequestContext($user,'TEST-token'));
-        self::assertCount(12,$home->universalTools);self::assertSame($expected===4,$home->showCorporateTools);self::assertCount($expected,$home->corporateTools);self::assertTrue($home->setupSummary->initialSetup);
+        $service=$this->access(['finance']);self::assertSame($expected,$service->canAccessCategory($context,$category));
     }
     public static function accessCases():iterable
     {
-        yield 'listed corporate'=>['corporate','Analyst','listeduser',['finance'=>['listeduser']],4];
-        yield 'listed manager'=>['manager','Property Manager','listedmanager',['admin'=>['listedmanager']],4];
-        yield 'class alone does not grant'=>['corporate','Executive','unlisteduser',['finance'=>['otheruser']],0];
-        yield 'title does not grant'=>['maintenance','Corporate Administrator','unlisteduser',['finance'=>['otheruser']],0];
+        yield 'listed normalized'=>[self::contextFor('LISTEDUSER','maintenance','Unrelated title'),' FINANCE ',true];yield 'null'=>[null,'finance',false];yield 'unknown'=>[self::contextFor('listeduser'),'unknown',false];yield 'invalid category'=>[self::contextFor('listeduser'),'../finance',false];
     }
-    public function testContactEmailAndSharedMailboxCannotGrantAccess():void
+    public function testProviderAlwaysReturnsAllCategoriesWithAccessAndAvailabilityStates():void
     {
-        $service=new CorporateAccessService(['finance'=>['manager@property.example.test']]);
-        $user=$this->user('manager','permanentmanager','Property Manager');
-        self::assertFalse($service->allows(new AuthenticatedRequestContext($user,'TEST-token')));
-        self::assertFalse(property_exists($user,'businessEmail'));self::assertFalse(property_exists($user,'personalEmail'));
-        $listed=new CorporateAccessService(['finance'=>['permanentmanager']]);
-        self::assertTrue($listed->allows(new AuthenticatedRequestContext($user,'TEST-token')));
+        $access=$this->access(['human-resources','credit-cards']);$cards=(new CorporateToolsProvider($access))->tools(self::contextFor('hruser'));self::assertSame(['finance','human-resources','marketing','admin','credit-cards'],array_map(static fn($card)=>$card->key,$cards));self::assertCount(5,$cards);
+        self::assertTrue($cards[1]->enabled);self::assertSame('/human-resources',$cards[1]->route);self::assertSame('Open Human Resources',$cards[1]->footerLabel);
+        self::assertFalse($cards[4]->enabled);self::assertNull($cards[4]->route);self::assertSame('Module planned',$cards[4]->footerLabel);
+        foreach([0,2,3] as $index){self::assertFalse($cards[$index]->enabled);self::assertNull($cards[$index]->route);self::assertSame('Access not assigned',$cards[$index]->footerLabel);}
     }
-    public function testAccessServiceFailsClosedOutsideAuthenticatedContext():void
+    public function testEveryAuthenticatedUserSeesCardsAndNavbarWithoutUnsafeDestinations():void
     {
-        $service=new CorporateAccessService(['admin'=>['disableduser','nonexistentuser']]);
-        self::assertFalse($service->allows(null));
+        $html=$this->render('unlisted',[]);foreach(['Corporate Tools','Finance','Human Resources','Marketing','Admin','Credit Cards','Access not assigned','aria-disabled="true"'] as $text)self::assertStringContainsString($text,$html);self::assertSame(5,substr_count($html,'data-tool-key=' )-12);self::assertStringNotContainsString('href="#"',$html);self::assertStringNotContainsString('javascript:void',$html);self::assertStringNotContainsString('corporate-access.php',$html);
+        $corporate=substr($html,(int)strpos($html,'id="corporate-tools"'),(int)strpos($html,'id="gateway-setup-title"')-(int)strpos($html,'id="corporate-tools"'));self::assertStringNotContainsString('<a ',$corporate);
     }
-    public function testConfiguredPermanentUsernameChuckReceivesCorporateTools():void
+    public function testTimConfigurationGrantsEveryCategoryAndOnlyImplementedHrLinks():void
     {
-        $config=require dirname(__DIR__,2).'/config/corporate-access.php';
-        self::assertContains('chuck',$config['administration']);
-        $context=new AuthenticatedRequestContext($this->user('manager','chuck','Any Job Title'),'TEST-token');
-        self::assertTrue((new CorporateAccessService($config))->allows($context));
-        $home=$this->home($config)->forRequest($context);
-        self::assertTrue($home->showCorporateTools);self::assertCount(4,$home->corporateTools);
+        $categories=['finance','human-resources','marketing','credit-cards'];$access=$this->access($categories);foreach($categories as $category)self::assertTrue($access->canAccessCategory(self::contextFor('tim'),$category));self::assertFalse($access->canAccessCategory(self::contextFor('tim'),'admin'));$html=$this->render('tim',$categories);self::assertSame(2,substr_count($html,'href="/human-resources"'));self::assertStringContainsString('Open Human Resources',$html);
     }
-    public function testCorporateDashboardRendersSectionAndDisabledDropdownInOrder():void
+    public function testViewsNeverInspectIdentityOrConfiguration():void
     {
-        $html=$this->render('manager','listedmanager',['finance'=>['listedmanager']]);
-        self::assertSame(1,substr_count($html,'id="corporate-tools-title"'));
-        foreach(['Finance','Human Resources','Marketing','Admin','Frequently used functions for corporate staff.','aria-label="Corporate tools menu"'] as $value)self::assertStringContainsString($value,$html);
-        self::assertSame(3,substr_count($html,'gateway-navbar__disabled-item'));self::assertStringContainsString('href="/human-resources"',$html);
-        self::assertLessThan(strpos($html,'id="corporate-tools-title"'),strpos($html,'id="universal-tools-title"'));
-        self::assertLessThan(strpos($html,'id="gateway-setup-title"'),strpos($html,'id="corporate-tools-title"'));
-        $section=substr($html,(int)strpos($html,'id="corporate-tools"'),(int)strpos($html,'id="gateway-setup-title"')-(int)strpos($html,'id="corporate-tools"'));
-        self::assertSame(1,substr_count($section,'<a '));self::assertStringContainsString('href="/human-resources"',$section);
+        $root=dirname(__DIR__,2);$views=(string)file_get_contents($root.'/resources/views/dashboard.php').(string)file_get_contents($root.'/resources/views/components/navbar.php');foreach(['corporate-access.php','businessEmail','personalEmail','canAccessCategory','CorporateAccessService'] as $forbidden)self::assertStringNotContainsString($forbidden,$views);self::assertFileDoesNotExist($root.'/database/migrations/202608010007_corporate_access.php');
     }
-    public function testNonCorporateDashboardOmitsSectionAndDropdown():void
+    private function render(string $username,array $categories):string
     {
-        $html=$this->render('corporate','unlisteduser',['finance'=>['otheruser']]);
-        self::assertStringNotContainsString('Corporate Tools',$html);self::assertStringNotContainsString('Corporate tools menu',$html);
-        self::assertStringContainsString('Universal Tools',$html);self::assertStringContainsString('Gateway Setup',$html);
+        $state=[];$service=$this->access($categories);$home=new DashboardHomeService(new DashboardSummaryService(new class implements DashboardSummaryStoreInterface{public function counts():array{return ['property_count'=>0,'employee_count'=>1,'user_count'=>1,'active_user_count'=>1,'active_assignment_count'=>0];}}),new UniversalToolProvider(),new CorporateToolsProvider($service),$service);return (new DashboardController(new CsrfService($state),$home,dirname(__DIR__,2).'/resources/views'))->index(self::contextFor($username))->body;
     }
-    public function testArchitectureKeepsFilteringAndDefinitionsOutOfPresentation():void
-    {
-        $root=dirname(__DIR__,2);$provider=file_get_contents($root.'/app/Services/CorporateToolsProvider.php');$service=file_get_contents($root.'/app/Services/DashboardHomeService.php');$controller=file_get_contents($root.'/app/Http/Controllers/DashboardController.php');$view=file_get_contents($root.'/resources/views/dashboard.php');
-        self::assertDoesNotMatchRegularExpression('/\\b(?:SELECT|INSERT|UPDATE|DELETE)\\b/i',$provider);self::assertStringNotContainsString('Repositories\\',$provider);
-        self::assertStringContainsString('$this->corporateAccess->allows($context)',$service);self::assertStringNotContainsString('jobTitle===',$service);self::assertStringNotContainsString("employeeClass==='corporate'",$service);
-        foreach(['Finance','Human Resources','Marketing'] as $definition){self::assertStringNotContainsString($definition,$controller);self::assertStringNotContainsString($definition,$view);}
-        self::assertStringNotContainsString('corporate-access.php',$controller);self::assertStringNotContainsString('corporate-access.php',$view);self::assertStringNotContainsString('->employeeClass===',$view);self::assertFileDoesNotExist($root.'/database/migrations/202607270003_corporate_tools.php');
-        self::assertSame([$root.'/public/assets/js/employee-username.js',$root.'/public/assets/js/phone-mask.js'],glob($root.'/public/assets/js/*.js')?:[]);
-    }
-    /** @param array<string,list<string>> $access */
-    private function home(array $access=[]):DashboardHomeService
-    {
-        $store=new class implements DashboardSummaryStoreInterface{public function counts():array{return ['property_count'=>0,'employee_count'=>1,'user_count'=>1,'active_user_count'=>1,'active_assignment_count'=>0];}};
-        return new DashboardHomeService(new DashboardSummaryService($store),new UniversalToolProvider(),new CorporateToolsProvider(),new CorporateAccessService($access));
-    }
-    /** @param array<string,list<string>> $access */
-    private function render(string $class,string $username,array $access):string
-    {
-        $state=[];$controller=new DashboardController(new CsrfService($state),$this->home($access),dirname(__DIR__,2).'/resources/views');
-        return $controller->index(new AuthenticatedRequestContext($this->user($class,$username,'Same Job'),'TEST-session-secret'))->body;
-    }
-    private function user(string $class,string $username,string $jobTitle):AuthenticatedUser
-    {
-        return new AuthenticatedUser(1,2,str_repeat('U',26),str_repeat('E',26),$username,'Test Employee',$jobTitle,$class);
-    }
+    private function access(array $allowed):CorporateAccessService{$store=new class($allowed) implements CategoryAccessStoreInterface{public function __construct(private array $allowed){}public function hasEffectiveMembership(int $userId,string $category):bool{return in_array($category,$this->allowed,true);}public function findUserByUsername(string $username):?array{return null;}public function allUsers():array{return [];}public function memberships():array{return [];}public function grant(array $membership):void{}public function revoke(int $userId,string $category):void{}};$config=require dirname(__DIR__,2).'/config/corporate-access.php';return new CorporateAccessService($store,$config['categories']);}
+    private static function contextFor(string $username,string $class='manager',string $title='Any title'):AuthenticatedRequestContext{return new AuthenticatedRequestContext(new AuthenticatedUser(1,2,str_repeat('U',26),str_repeat('E',26),$username,'Test User',$title,$class),'TEST-token');}
 }

@@ -11,7 +11,7 @@ final class DashboardHomeService
     public function __construct(private readonly DashboardSummaryService $summaries,private readonly UniversalToolProviderInterface $universalTools,private readonly CorporateToolsProviderInterface $corporateTools,private readonly CorporateAccessService $corporateAccess) {}
     public function forRequest(AuthenticatedRequestContext $context):DashboardHome
     {
-        $user=$context->user;$showCorporateTools=$this->corporateAccess->allows($context);
-        return new DashboardHome($user->displayName,$user->employeeClass===''?'Gateway User':ucwords(str_replace(['-','_'],' ',$user->employeeClass)),$user->jobTitle,$this->universalTools->tools(),$showCorporateTools,$showCorporateTools?$this->corporateTools->tools():[],$this->summaries->forUser($user));
+        $user=$context->user;
+        return new DashboardHome($user->displayName,$user->employeeClass===''?'Gateway User':ucwords(str_replace(['-','_'],' ',$user->employeeClass)),$user->jobTitle,$this->universalTools->tools(),$this->corporateTools->tools($context),$this->summaries->forUser($user));
     }
 }

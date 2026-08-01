@@ -5,6 +5,8 @@ use NpmGateway\Contracts\ClockInterface;
 use NpmGateway\Contracts\InitializationTransactionInterface;
 use NpmGateway\Contracts\SystemInitializationInterface;
 use NpmGateway\Contracts\UserStoreInterface;
+use NpmGateway\Contracts\CategoryAccessStoreInterface;
+use NpmGateway\Support\PublicIdGenerator;
 use NpmGateway\Exceptions\Domain\AdministratorAlreadyInitializedException;
 use NpmGateway\Exceptions\Domain\CredentialNotificationException;
 use NpmGateway\Exceptions\Domain\InitializationDatabaseException;
@@ -25,7 +27,10 @@ final class SystemInitializationService implements SystemInitializationInterface
         private readonly NotificationService $notificationService,
         private readonly ClockInterface $clock,
         private readonly array $notificationConfig,
-        private readonly ?CorporateContextService $corporateContext=null
+        private readonly ?CorporateContextService $corporateContext=null,
+        private readonly ?CategoryAccessStoreInterface $categoryAccess=null,
+        private readonly array $categories=[],
+        private readonly ?PublicIdGenerator $publicIds=null
     ) {}
     public function initialize(InitializeAdministratorRequest $request): InitializeAdministratorResult
     {
@@ -47,6 +52,7 @@ final class SystemInitializationService implements SystemInitializationInterface
                 $employee = $this->employeeService->createBootstrapCorporate($request, $now->format('Y-m-d'));
                 $user = $this->userService->createBootstrapUser((int) $employee['id'], $request->username, $credential->passwordHash, $timestamp);
                 $this->corporateContext?->ensure('gateway-initialization');
+                if($this->categoryAccess!==null&&$this->publicIds!==null){foreach(array_keys($this->categories) as $category)$this->categoryAccess->grant(['public_id'=>$this->publicIds->generate(),'user_id'=>(int)$user['id'],'category'=>(string)$category,'granted_by_user_id'=>(int)$user['id'],'granted_at'=>$timestamp]);}
                 $this->auditService->record(
                     'system.administrator_initialized', (int) $user['id'], (int) $employee['id'],
                     (string) $user['public_id'], 'Initial corporate administrator created.',
@@ -54,6 +60,7 @@ final class SystemInitializationService implements SystemInitializationInterface
                         'employee_public_id' => $employee['public_id'], 'user_public_id' => $user['public_id'],
                         'employee_number' => $employee['employee_number'], 'username' => $user['username'],
                         'employee_class' => 'corporate', 'job_title' => $employee['job_title'],
+                        'category_access' => array_keys($this->categories),
                         'initialized_at' => $timestamp, 'notification_status' => 'pending',
                     ],
                     $timestamp

@@ -210,3 +210,6 @@ creates `authentication.login_succeeded`; lockout creates
 `authentication.account_locked`; logout creates `authentication.logout` and
 `authentication.session_revoked`. Audit metadata never contains passwords,
 password hashes, raw tokens, or token hashes.
+# `user_category_access`
+
+Durable per-user Corporate category authorization introduced by Migration 007. `user_id` identifies the member; `category` is one of `finance`, `human-resources`, `marketing`, `admin`, or `credit-cards`. The pair is unique. `public_id` is the external identifier, while `granted_by_user_id`/`granted_at` and nullable update fields retain provenance. All user foreign keys use `RESTRICT`; application services supply public IDs and timestamps. Membership remains stored for inactive users, but is ineffective while the linked user is inactive.

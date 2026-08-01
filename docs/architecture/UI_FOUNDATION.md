@@ -110,3 +110,6 @@ Major employee creation uses a dedicated authenticated page, never a modal. It f
 ## Restricted HR employee form
 
 The Add Employee form collects required Date of Birth using a date input without a default. Personal phone, personal email, and Employee Notes are visibly optional. Personal phone retains progressive-enhancement masking, and the form remains usable without JavaScript. Date of Birth and optional private fields do not appear in directory, dashboard, or property UI.
+# Administration workspace
+
+`/admin` contains one enabled Category Access card. `/admin/category-access` renders a server-authoritative, accessible checkbox matrix using user public IDs. It displays only employee display name, username, user status, and the five category states. A single CSRF-protected save applies changed grants and revocations atomically. No database IDs or sensitive employee, credential, or session fields belong in this presentation.

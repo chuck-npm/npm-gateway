@@ -1,10 +1,9 @@
 <?php
-
 declare(strict_types=1);
-
-return [
-    // Permanent Gateway usernames, grouped by corporate area:
-    'administration' => [
-        'chuck',
-    ],
-];
+return ['categories'=>[
+    'finance'=>'Finance',
+    'human-resources'=>'Human Resources',
+    'marketing'=>'Marketing',
+    'admin'=>'Admin',
+    'credit-cards'=>'Credit Cards',
+]];

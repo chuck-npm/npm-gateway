@@ -85,6 +85,7 @@ final class SchemaVerifier
         if(isset($executed[CorporateContextSchema::MIGRATION])){$this->verifyCorporateContextSchema();}
         if(isset($executed[EmployeeAdministrationSchema::MIGRATION])){$this->verifyEmployeeAdministrationSchema();}
         if(isset($executed[EmployeeDateOfBirthSchema::MIGRATION])){$this->verifyEmployeeDateOfBirthSchema();}
+        if(isset($executed[UserCategoryAccessSchema::MIGRATION])){$this->verifyUserCategoryAccessSchema();}
 
         return [
             'Schema verification passed.',
@@ -124,6 +125,10 @@ final class SchemaVerifier
         foreach(['dob','birth_date','birthday','age'] as $forbidden)if(isset($columns[$forbidden]))throw new MigrationException("employees.{$forbidden} is a forbidden duplicate or derived Date of Birth field.");
         if((int)($columns['date_of_birth']['ORDINAL_POSITION']??0)!==(int)($columns['preferred_name']['ORDINAL_POSITION']??-1)+1)throw new MigrationException('employees.date_of_birth must appear after preferred_name.');
         if(isset($this->tableMetadata('employees')['indexes']['idx_employees_date_of_birth']))throw new MigrationException('employees.date_of_birth must not have a general-purpose index.');
+    }
+    private function verifyUserCategoryAccessSchema():void
+    {
+        $metadata=$this->tableMetadata('user_category_access');foreach(['PRIMARY','uq_user_category_access_public_id','uq_user_category_access_user_category','idx_user_category_access_category','idx_user_category_access_granted_by','idx_user_category_access_updated_by'] as $index)if(!isset($metadata['indexes'][$index]))throw new MigrationException("Missing index {$index} on user_category_access.");foreach(['fk_user_category_access_user','fk_user_category_access_granted_by','fk_user_category_access_updated_by'] as $foreignKey)if(($metadata['foreign_keys'][$foreignKey]??'')!=='RESTRICT')throw new MigrationException("Invalid foreign key {$foreignKey} on user_category_access.");if(!isset($metadata['checks']['chk_user_category_access_category']))throw new MigrationException('Missing category check on user_category_access.');
     }
 
     private function verifyFoundationSchema(bool $authenticationSecurityApplied,bool $employeeAdministrationApplied): void

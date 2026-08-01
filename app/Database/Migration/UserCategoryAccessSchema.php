@@ -1,0 +1,8 @@
+<?php
+declare(strict_types=1);
+namespace NpmGateway\Database\Migration;
+final class UserCategoryAccessSchema
+{
+    public const MIGRATION='202608010007_user_category_access';
+    public const CATEGORIES=['finance','human-resources','marketing','admin','credit-cards'];
+}
