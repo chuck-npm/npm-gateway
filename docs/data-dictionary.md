@@ -213,3 +213,18 @@ password hashes, raw tokens, or token hashes.
 # `user_category_access`
 
 Durable per-user Corporate category authorization introduced by Migration 007. `user_id` identifies the member; `category` is one of `finance`, `human-resources`, `marketing`, `admin`, or `credit-cards`. The pair is unique. `public_id` is the external identifier, while `granted_by_user_id`/`granted_at` and nullable update fields retain provenance. All user foreign keys use `RESTRICT`; application services supply public IDs and timestamps. Membership remains stored for inactive users, but is ineffective while the linked user is inactive.
+# Notifications (Migration 008)
+
+`notifications` stores immutable, non-sensitive communication snapshots and source-event identity. `notification_recipients` materializes one assignment per eligible user and stores first-view, acknowledgment, snapshotted business-email, and sanitized delivery status. Both tables use ULID public IDs and restrictive foreign keys; historical rows prevent rollback.
+
+Migration 009 extends notification and Company Notice authorization allowlists. Migration 012 adds the first-class `operations` category. The presentation order is `operations`, `human-resources`, `company-notices`, `finance`, `marketing`, `admin`, `credit-cards`; initial Operations backfill members are Chuck and Tim only.
+
+# Gateway Storage (Migration 010)
+
+`storage_objects` holds provider-independent metadata for private objects. Wasabi is the initial provider. Each row has a public ID, private provider/container/object key, original and display filenames, MIME type, byte size, lowercase SHA-256 digest, uploader, and `temporary`, `published`, or `deleted` lifecycle metadata. Provider locators and numeric IDs are never public. Object keys are unique within provider and container. All user foreign keys use `RESTRICT`.
+
+`notification_storage_objects` links a notification to a storage object with the role `attachment` or `embedded_image`, display order, linking actor, and public ID. The notification/object pair is unique, but a storage object may be reused across different notifications. All foreign keys use `RESTRICT`.
+
+Migration 011 permits `deleted_by_user_id` to remain null only for an approved automated cleanup transition. A non-null value identifies an authenticated interactive deletion. Every deleted object still requires `deleted_at`, cannot retain a temporary review owner, and remains auditable. System cleanup records an `audit_logs` event with its already-supported null actor; Gateway does not fabricate a system user.
+
+Company Notices allow at most 10 combined attachments and embedded images, 104857600 bytes (100 MiB) per object, and 1048576000 bytes (1,000 MiB) total. These binary-megabyte limits are application rules and are intentionally absent from the generic storage schema.

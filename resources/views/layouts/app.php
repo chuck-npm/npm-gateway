@@ -22,4 +22,5 @@ require $componentDirectory . DIRECTORY_SEPARATOR . 'header.php';
         <?= $contentHtml ?>
     </div>
 </main>
+<?php require $componentDirectory . DIRECTORY_SEPARATOR . 'processing-overlay.php'; ?>
 <?php require $componentDirectory . DIRECTORY_SEPARATOR . 'footer.php'; ?>

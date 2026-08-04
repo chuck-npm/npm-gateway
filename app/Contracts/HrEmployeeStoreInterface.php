@@ -8,4 +8,5 @@ interface HrEmployeeStoreInterface extends EmployeeStoreInterface
     public function findOperationalProperty(int $id):?array;
     public function corporateProperty():?array;
     public function insertAssignment(array $assignment):int;
+    public function hasActivePrimaryPropertyManager(int $propertyId):bool;
 }

@@ -33,7 +33,7 @@ $logoutCsrfToken = isset($logoutCsrfToken) ? (string) $logoutCsrfToken : '';
                         <a class="nav-link gateway-navbar__link<?= $active ? ' active' : '' ?>"
                            href="<?= htmlspecialchars($url, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>"
                            <?= $active ? 'aria-current="page"' : '' ?>>
-                            <?= htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>
+                            <?= htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?><?php if($url==='/notifications'&&isset($notificationCount)&&$notificationCount->outstanding>0): ?> <span class="badge text-bg-danger rounded-pill"><?= $notificationCount->outstanding ?></span><?php endif; ?>
                         </a>
                     </li>
                 <?php endforeach; ?>

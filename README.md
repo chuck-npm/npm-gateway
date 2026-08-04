@@ -1,5 +1,7 @@
 # NPM Gateway
 
+Corporate Operations is authorized through the first-class `operations` category. Migration 012 expands the category constraint, and `php bin/gateway operations-access:backfill` grants the initial Operations memberships to Chuck and Tim only. Future membership is managed in Category Access. See `docs/operations-workspace.md`.
+
 NPM Gateway is the internal company portal for NPM Properties. This repository is
 a clean rebuild and contains no code from any legacy NPM Gateway or Highridge
 portal.
@@ -453,9 +455,14 @@ The `employees.date_of_birth` column is nullable for legacy compatibility and is
 
 Every Corporate, Manager, and Assistant Manager created here receives a Gateway account. Employee numbers use locked, never-reused `NPM######` allocation. Gateway generates and Argon2id-hashes the initial permanent password; plaintext exists only in process memory through the synchronous post-commit `SECURE` notification attempt. Configure comma-separated recipients with `HR_NEW_EMPLOYEE_NOTIFICATION_RECIPIENTS` and the approved sender with `MAIL_FROM_ADDRESS=no-reply@npmpropertiesinc.com`. A failed notification does not roll back committed employee data, and the unrecoverable plaintext password is never stored for retry. Password reset/change workflows remain deferred.
 
-New-employee mail uses PHPMailer over authenticated TLS (`SMTP_SECURE=tls`) or implicit TLS (`SMTP_SECURE=ssl`) with normal certificate verification. `php bin/gateway notification:check` performs a local-only, non-sending configuration diagnostic and reports no credentials. It never opens an SMTP connection or sends an email.
+New-employee mail uses PHPMailer over authenticated TLS (`SMTP_SECURE=tls`) or implicit TLS (`SMTP_SECURE=ssl`) with normal certificate verification. `php bin/gateway notification:check` performs a local-only, non-sending configuration diagnostic and reports no credentials. It never opens an SMTP connection or sends an email. Before enabling 100 MiB Company Notice uploads, run `php bin/gateway upload:check` in the deployed web runtime and separately verify the effective IIS request-filtering limit; the command reports effective PHP limits without changing them or exposing configuration paths.
 # Category access administration
 
 Corporate category definitions live in `config/corporate-access.php`; user memberships do not. Durable memberships are stored in `user_category_access` and are managed at `/admin/category-access`. Migration 007 creates schema only. Existing local users are initialized separately with `php bin/gateway category-access:backfill`, which grants Chuck all five approved categories and Tim every category except Admin.
 
 Fresh bootstrap administrators receive all five memberships in the bootstrap transaction. An inactive user retains membership records but has no effective category access. Administrators cannot remove their own Admin membership or leave the system without an active Admin. Grant, revoke, matrix-change, and backfill operations are audited. Do not restore username membership lists to configuration.
+# Notifications
+
+Gateway provides global authenticated notifications with durable per-user acknowledgment, truthful outstanding counts, materialized recipient history, and audited delivery status. See [Notifications architecture](docs/architecture/NOTIFICATIONS.md). Migration 008 must be validated against `npmgateway_test` before explicit approval to apply it to the normal local database.
+
+Authorized Corporate users publish manual communications through **Company Notices**; recipients read them in **Notifications**. Version 1 uses a fixed All Active Gateway Users audience, review-before-publish, immutable publication, optional acknowledgment, and the shared company-announcement email renderer. Draft persistence and targeted audiences are planned, not implemented.

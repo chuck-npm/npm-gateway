@@ -6,6 +6,7 @@ use NpmGateway\Contracts\EmployeeStoreInterface;
 use NpmGateway\Contracts\EmployeeDirectoryStoreInterface;
 use NpmGateway\Contracts\HrEmployeeStoreInterface;
 use NpmGateway\ValueObjects\EmployeeDirectoryCriteria;
+use NpmGateway\Exceptions\Domain\ActivePrimaryPropertyManagerConflictException;
 final class EmployeeRepository implements EmployeeStoreInterface,EmployeeDirectoryStoreInterface,HrEmployeeStoreInterface
 {
     public function __construct(private readonly mysqli $connection) {}
@@ -75,8 +76,9 @@ final class EmployeeRepository implements EmployeeStoreInterface,EmployeeDirecto
     }
     public function insertAssignment(array $a):int
     {
-        $s=$this->connection->prepare('INSERT INTO employee_property_assignments(public_id,employee_id,property_id,assignment_type,is_primary,starts_on,ends_on,created_by,updated_by) VALUES(?,?,?,?,1,?,NULL,?,?)');$s->bind_param('siissii',$a['public_id'],$a['employee_id'],$a['property_id'],$a['assignment_type'],$a['starts_on'],$a['created_by'],$a['updated_by']);$s->execute();$id=$this->connection->insert_id;$s->close();return $id;
+        $s=$this->connection->prepare('INSERT INTO employee_property_assignments(public_id,employee_id,property_id,assignment_type,is_primary,starts_on,ends_on,created_by,updated_by) VALUES(?,?,?,?,1,?,NULL,?,?)');$s->bind_param('siissii',$a['public_id'],$a['employee_id'],$a['property_id'],$a['assignment_type'],$a['starts_on'],$a['created_by'],$a['updated_by']);try{$s->execute();}catch(\mysqli_sql_exception $e){$s->close();if($a['assignment_type']==='property_manager'&&$e->getCode()===1062)throw new ActivePrimaryPropertyManagerConflictException('Active primary Property Manager conflict.',0,$e);throw $e;}$id=$this->connection->insert_id;$s->close();return $id;
     }
+    public function hasActivePrimaryPropertyManager(int $propertyId):bool{$s=$this->connection->prepare("SELECT 1 FROM employee_property_assignments WHERE property_id=? AND assignment_type='property_manager' AND is_primary=1 AND ends_on IS NULL LIMIT 1");$s->bind_param('i',$propertyId);$s->execute();$exists=$s->get_result()->num_rows>0;$s->close();return $exists;}
     /** @return array{string,string,list<mixed>} */
     private function directoryWhere(EmployeeDirectoryCriteria $criteria):array
     {

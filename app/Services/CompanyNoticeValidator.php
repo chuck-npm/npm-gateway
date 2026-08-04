@@ -1,0 +1,10 @@
+<?php
+declare(strict_types=1);
+namespace NpmGateway\Services;
+final class CompanyNoticeValidator
+{
+ public function __construct(private readonly RichTextSanitizer $sanitizer=new RichTextSanitizer()){}
+ public function validate(array $input):array{$title=trim((string)($input['title']??''));$message=trim((string)($input['message']??''));$raw=trim((string)($input['rich_message_html']??''));$priority=(string)($input['priority']??'normal');$ack=(string)($input['requires_acknowledgment']??'yes');$errors=[];if($title===''||mb_strlen($title)>200||preg_match('/[\r\n<>\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u',$title))$errors['title']='Enter a plain-text title of no more than 200 characters.';try{$html=$this->sanitizer->sanitize($raw!==''?$raw:'<p>'.nl2br(htmlspecialchars($message,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8')).'</p>');$message=$this->sanitizer->plainText($html);if(mb_strlen($message)>10000)throw new \InvalidArgumentException();}catch(\Throwable){$errors['message']='Enter a safe notice message of no more than 10,000 characters.';$html='';}if(!in_array($priority,['normal','important','urgent'],true))$errors['priority']='Select a valid priority.';if(!in_array($ack,['yes','no'],true))$errors['requires_acknowledgment']='Select whether acknowledgment is required.';if($errors!==[])throw new \InvalidArgumentException(json_encode($errors,JSON_THROW_ON_ERROR));return ['title'=>$title,'message'=>$message,'rich_message_html'=>$html,'priority'=>$priority,'requires_acknowledgment'=>$ack==='yes','compose_context'=>(string)($input['compose_context']??'')];}
+ public function validateReviewed(array $input):array{if(!array_key_exists('requires_acknowledgment',$input)||!is_bool($input['requires_acknowledgment']))throw new \InvalidArgumentException(json_encode(['requires_acknowledgment'=>'Reviewed acknowledgment state is invalid.'],JSON_THROW_ON_ERROR));$input['requires_acknowledgment']=$input['requires_acknowledgment']?'yes':'no';return $this->validate($input);}
+ public function summary(string $message):string{$paragraph=trim((string)(preg_split('/\R\s*\R/u',$message)[0]??$message));return mb_strlen($paragraph)<=500?$paragraph:mb_substr($paragraph,0,497).'...';}
+}

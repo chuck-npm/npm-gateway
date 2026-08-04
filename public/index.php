@@ -29,6 +29,25 @@ use NpmGateway\Services\PropertyQueryService;
 use NpmGateway\Support\FlashSession;
 use NpmGateway\Http\Controllers\HrEmployeeController;
 use NpmGateway\Services\HrEmployeeCreationService;
+use NpmGateway\Services\EmployeeCreationSubmissionStore;
+use NpmGateway\Http\Controllers\NotificationController;
+use NpmGateway\Services\NotificationQueryService;
+use NpmGateway\Services\NotificationAcknowledgmentService;
+use NpmGateway\Services\NotificationPresentationService;
+use NpmGateway\Http\Controllers\CompanyNoticeController;
+use NpmGateway\Services\CompanyNoticeValidator;
+use NpmGateway\Services\CompanyNoticeReviewStore;
+use NpmGateway\Services\CompanyNoticePublicationService;
+use NpmGateway\Services\CompanyNoticeQueryService;
+use NpmGateway\Support\PublicIdGenerator;
+use NpmGateway\Services\CompanyNoticeComposeStore;
+use NpmGateway\Services\CompanyNoticeAssetService;
+use NpmGateway\Services\GatewayStorageService;
+use NpmGateway\Services\LoginReturnStore;
+use NpmGateway\Services\PublishedStorageService;
+use NpmGateway\Services\CompanyNoticeDraftDiscardService;
+use NpmGateway\Http\Controllers\StorageController;
+use NpmGateway\Http\Controllers\CorporateWorkspaceController;
 
 $application=require dirname(__DIR__).'/bootstrap/app.php';$root=$application['root'];$environment=(string)$application['config']['app']['environment'];
 $path=parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH);$path=is_string($path)?rtrim($path,'/'):'/';$path=$path===''?'/':$path;
@@ -43,16 +62,19 @@ $nativeSession=require $root.'/config/session.php';$nativeSessionName=(string)$n
 if(!preg_match('/^[A-Za-z][A-Za-z0-9_-]{1,63}$/',$nativeSessionName)||hash_equals($authConfig->cookieName,$nativeSessionName)){throw new RuntimeException('Native PHP and Gateway authentication cookie names must be valid and distinct.');}
 if(session_status()!==PHP_SESSION_ACTIVE){ini_set('session.use_strict_mode','1');ini_set('session.use_only_cookies','1');session_name($nativeSessionName);session_set_cookie_params(['lifetime'=>0,'path'=>'/','secure'=>$authConfig->secure,'httponly'=>true,'samesite'=>$authConfig->sameSite]);session_start();}
 $csrf=new CsrfService($_SESSION);$cookie=new SessionCookie($authConfig);$views=$root.'/resources/views';
-$authentication=new AuthenticationController($container->get(AuthenticationService::class),$container->get(SessionService::class),$cookie,$csrf,$views);
+$loginReturns=new LoginReturnStore($_SESSION);$authentication=new AuthenticationController($container->get(AuthenticationService::class),$container->get(SessionService::class),$cookie,$csrf,$views,$loginReturns);
 $employees=new EmployeeWorkspaceController($container->get(EmployeeDirectoryCriteriaFactory::class),$container->get(EmployeeDirectoryService::class),$container->get(CorporateAccessService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,$views);
 $properties=new PropertyWorkspaceController($container->get(PropertyDirectoryCriteriaFactory::class),$container->get(PropertyQueryService::class),$container->get(PropertyAdministrationService::class),$container->get(CorporateAccessService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
 $hr=new HumanResourcesController($container->get(CorporateAccessService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,$views);
-$hrEmployees=new HrEmployeeController($container->get(EmployeeDirectoryCriteriaFactory::class),$container->get(EmployeeDirectoryService::class),$container->get(HrEmployeeCreationService::class),$container->get(CorporateAccessService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
+$hrEmployees=new HrEmployeeController($container->get(EmployeeDirectoryCriteriaFactory::class),$container->get(EmployeeDirectoryService::class),$container->get(HrEmployeeCreationService::class),new EmployeeCreationSubmissionStore($_SESSION,$container->get(PublicIdGenerator::class)),$container->get(CorporateAccessService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
 $admin=new AdminController($container->get(CorporateAccessService::class),$container->get(CategoryAccessAdministrationService::class),$container->get(CategoryAccessPayloadParser::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
-$kernel=new WebKernel($authentication,new DashboardController($csrf,$container->get(DashboardHomeService::class),$views),new RequireAuthenticationMiddleware($container->get(SessionService::class),$cookie),$employees,$properties,$hr,$hrEmployees,$admin);
-$request=new Request(strtoupper((string)($_SERVER['REQUEST_METHOD']??'GET')),$path,$_POST,array_map('strval',$_COOKIE),array_map('strval',$_SERVER),array_map('strval',$_GET));
+$notificationController=new NotificationController($container->get(NotificationQueryService::class),$container->get(NotificationAcknowledgmentService::class),$container->get(NotificationPresentationService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
+$companyNoticeController=new CompanyNoticeController($container->get(CorporateAccessService::class),$container->get(CompanyNoticeQueryService::class),$container->get(CompanyNoticeValidator::class),$container->get(CompanyNoticeReviewStore::class),$container->get(CompanyNoticePublicationService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views,$container->get(CompanyNoticeComposeStore::class),$container->get(CompanyNoticeAssetService::class),$container->get(GatewayStorageService::class),$container->get(ClockInterface::class),$container->get(CompanyNoticeDraftDiscardService::class));
+$corporate=new CorporateWorkspaceController($container->get(CorporateAccessService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,$views);
+$kernel=new WebKernel($authentication,new DashboardController($csrf,$container->get(DashboardHomeService::class),$views,$container->get(NotificationQueryService::class)),new RequireAuthenticationMiddleware($container->get(SessionService::class),$cookie,$loginReturns),$employees,$properties,$hr,$hrEmployees,$admin,$notificationController,$companyNoticeController,new StorageController($container->get(PublishedStorageService::class)),$corporate);
+$request=new Request(strtoupper((string)($_SERVER['REQUEST_METHOD']??'GET')),$path,$_POST,array_map('strval',$_COOKIE),array_map('strval',$_SERVER),array_map('strval',$_GET),$_FILES);
 $response=$kernel->handle($request,$container->get(ClockInterface::class)->now());http_response_code($response->status);
 foreach($response->headers as $name=>$value)header($name.': '.$value);
 foreach($response->cookies as $definition){$name=$definition['name'];$value=$definition['value'];unset($definition['name'],$definition['value']);setcookie($name,$value,$definition);}
-header('Content-Type: text/html; charset=UTF-8');echo $response->body;
+if(!isset($response->headers['Content-Type']))header('Content-Type: text/html; charset=UTF-8');if(is_resource($response->stream)){stream_copy_to_stream($response->stream,fopen('php://output','wb'));fclose($response->stream);}else echo $response->body;
 $container->get(mysqli::class)->close();

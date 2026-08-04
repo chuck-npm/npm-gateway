@@ -1,0 +1,10 @@
+{
+  "name": "npm-gateway-assets",
+  "private": true,
+  "scripts": {
+    "build:vendor": "node scripts/copy-quill-assets.mjs"
+  },
+  "devDependencies": {
+    "quill": "2.0.3"
+  }
+}

@@ -44,6 +44,8 @@ metrics, fake activity, and unavailable navigation links are prohibited.
 
 ## Corporate navigation pattern
 
+Corporate ordering begins Operations, Human Resources, Company Notices, Finance, Marketing, Admin, and Credit Cards. Operations exposes Inventory – CF, Inventory – HR, and Development; Marketing exposes Flyers. CF means Crumley Farms and HR means Highridge.
+
 For authenticated users approved by the corporate-access service, page order is
 Welcome, Universal Tools, Corporate Tools, then System Status. Employee class
 and employee contact data do not control this presentation decision; access
@@ -113,3 +115,6 @@ The Add Employee form collects required Date of Birth using a date input without
 # Administration workspace
 
 `/admin` contains one enabled Category Access card. `/admin/category-access` renders a server-authoritative, accessible checkbox matrix using user public IDs. It displays only employee display name, username, user status, and the five category states. A single CSRF-protected save applies changed grants and revocations atomically. No database IDs or sensitive employee, credential, or session fields belong in this presentation.
+# Notifications
+
+Notifications is a top-level authenticated destination between Dashboard and Corporate. Its navigation pill and dashboard card use the same centralized outstanding-count definition. List and detail views work without JavaScript; acknowledgment uses POST and CSRF with the exact label “I Have Read This Notice.”

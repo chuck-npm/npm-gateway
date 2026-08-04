@@ -86,6 +86,10 @@ final class SchemaVerifier
         if(isset($executed[EmployeeAdministrationSchema::MIGRATION])){$this->verifyEmployeeAdministrationSchema();}
         if(isset($executed[EmployeeDateOfBirthSchema::MIGRATION])){$this->verifyEmployeeDateOfBirthSchema();}
         if(isset($executed[UserCategoryAccessSchema::MIGRATION])){$this->verifyUserCategoryAccessSchema();}
+        if(isset($executed[NotificationsSchema::MIGRATION])){$this->verifyNotificationsSchema();}
+        if(isset($executed[OperationsCategorySchema::MIGRATION])){$this->verifyOperationsCategorySchema();}elseif(isset($executed[CompanyNoticesCategorySchema::MIGRATION])){$this->verifyCompanyNoticesCategorySchema();}
+        if(isset($executed[GatewayStorageSchema::MIGRATION])){$this->verifyGatewayStorageSchema();}
+        if(isset($executed[StorageSystemCleanupActorSchema::MIGRATION])){$this->verifyStorageSystemCleanupActorSchema();}
 
         return [
             'Schema verification passed.',
@@ -103,6 +107,8 @@ final class SchemaVerifier
         $assignments=$this->tableMetadata('employee_property_assignments');
         foreach(PropertiesWorkspaceSchema::ASSIGNMENT_COLUMNS as $column){if(!isset($assignments['columns'][$column]))throw new MigrationException("Missing column {$column} on employee_property_assignments.");}
         foreach(PropertiesWorkspaceSchema::ASSIGNMENT_INDEXES as $index){if(!isset($assignments['indexes'][$index]))throw new MigrationException("Missing index {$index} on employee_property_assignments.");}
+        $statement=$this->connection->prepare("SELECT COLUMN_NAME,GENERATION_EXPRESSION FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME='employee_property_assignments' AND COLUMN_NAME IN ('active_primary_manager_property_id','active_primary_manager_employee_id')");$database=$this->expectedDatabase;$statement->bind_param('s',$database);$statement->execute();$generated=[];foreach($statement->get_result()->fetch_all(MYSQLI_ASSOC) as $row){$expression=strtolower(str_replace(['`','(',')','_utf8mb4'], '',(string)$row['GENERATION_EXPRESSION']));$generated[(string)$row['COLUMN_NAME']]=preg_replace('/\s+/','',$expression)??'';}$statement->close();
+        foreach(['active_primary_manager_property_id'=>'property_id','active_primary_manager_employee_id'=>'employee_id'] as $column=>$identity){$expression=$generated[$column]??'';foreach(['assignment_type','property_manager','is_primary=1','ends_onisnull',$identity,'elsenull'] as $required)if(!str_contains($expression,$required))throw new MigrationException("Invalid generated expression for {$column}.");if(str_contains($expression,'assistant_manager'))throw new MigrationException("Invalid generated expression for {$column}.");}
     }
     private function verifyCorporateContextSchema():void
     {
@@ -130,6 +136,39 @@ final class SchemaVerifier
     {
         $metadata=$this->tableMetadata('user_category_access');foreach(['PRIMARY','uq_user_category_access_public_id','uq_user_category_access_user_category','idx_user_category_access_category','idx_user_category_access_granted_by','idx_user_category_access_updated_by'] as $index)if(!isset($metadata['indexes'][$index]))throw new MigrationException("Missing index {$index} on user_category_access.");foreach(['fk_user_category_access_user','fk_user_category_access_granted_by','fk_user_category_access_updated_by'] as $foreignKey)if(($metadata['foreign_keys'][$foreignKey]??'')!=='RESTRICT')throw new MigrationException("Invalid foreign key {$foreignKey} on user_category_access.");if(!isset($metadata['checks']['chk_user_category_access_category']))throw new MigrationException('Missing category check on user_category_access.');
     }
+    private function verifyNotificationsSchema():void
+    {
+        $notice=$this->tableMetadata('notifications');$recipient=$this->tableMetadata('notification_recipients');
+        foreach(NotificationsSchema::NOTIFICATION_INDEXES as $index)if(!isset($notice['indexes'][$index]))throw new MigrationException("Missing index {$index} on notifications.");
+        foreach(NotificationsSchema::RECIPIENT_INDEXES as $index)if(!isset($recipient['indexes'][$index]))throw new MigrationException("Missing index {$index} on notification_recipients.");
+        foreach(['fk_notifications_created_by'] as $key)if(($notice['foreign_keys'][$key]??'')!=='RESTRICT')throw new MigrationException("Invalid foreign key {$key}.");
+        foreach(['fk_notification_recipients_notification','fk_notification_recipients_user'] as $key)if(($recipient['foreign_keys'][$key]??'')!=='RESTRICT')throw new MigrationException("Invalid foreign key {$key}.");
+        foreach(['chk_notifications_type','chk_notifications_priority','chk_notifications_status','chk_notifications_ack'] as $check)if(!isset($notice['checks'][$check]))throw new MigrationException("Missing check {$check}.");
+        if(!isset($recipient['checks']['chk_notification_recipients_email_status']))throw new MigrationException('Missing recipient email-status check.');
+        $statement=$this->connection->prepare("SELECT DATA_TYPE,IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME='notifications' AND COLUMN_NAME='payload'");$database=$this->expectedDatabase;$statement->bind_param('s',$database);$statement->execute();$payload=$statement->get_result()->fetch_assoc();$statement->close();if(($payload['DATA_TYPE']??'')!=='json'||($payload['IS_NULLABLE']??'')!=='NO')throw new MigrationException('notifications.payload must be JSON NOT NULL.');
+    }
+    private function verifyCompanyNoticesCategorySchema():void
+    {
+        $this->assertCheckValues('user_category_access','chk_user_category_access_category',CompanyNoticesCategorySchema::CATEGORIES);$this->assertCheckValues('notifications','chk_notifications_type',CompanyNoticesCategorySchema::NOTIFICATION_TYPES);
+    }
+    private function verifyOperationsCategorySchema():void{$this->assertCheckValues('user_category_access','chk_user_category_access_category',OperationsCategorySchema::SQL_CATEGORIES);$this->assertCheckValues('notifications','chk_notifications_type',CompanyNoticesCategorySchema::NOTIFICATION_TYPES);}
+    private function verifyGatewayStorageSchema():void
+    {
+        $storage=$this->tableMetadata('storage_objects');$links=$this->tableMetadata('notification_storage_objects');
+        foreach(GatewayStorageSchema::STORAGE_INDEXES as $index)if(!isset($storage['indexes'][$index]))throw new MigrationException("Missing index {$index} on storage_objects.");
+        foreach(GatewayStorageSchema::LINK_INDEXES as $index)if(!isset($links['indexes'][$index]))throw new MigrationException("Missing index {$index} on notification_storage_objects.");
+        if(isset($links['indexes']['uq_notification_storage_objects_object']))throw new MigrationException('Storage objects must remain reusable across notifications.');
+        foreach(GatewayStorageSchema::STORAGE_FOREIGN_KEYS as $key)if(($storage['foreign_keys'][$key]??'')!=='RESTRICT')throw new MigrationException("Invalid foreign key {$key} on storage_objects.");
+        foreach(GatewayStorageSchema::LINK_FOREIGN_KEYS as $key)if(($links['foreign_keys'][$key]??'')!=='RESTRICT')throw new MigrationException("Invalid foreign key {$key} on notification_storage_objects.");
+        foreach(GatewayStorageSchema::STORAGE_CHECKS as $check)if(!isset($storage['checks'][$check]))throw new MigrationException("Missing check {$check} on storage_objects.");
+        if(!isset($links['checks']['chk_notification_storage_objects_role']))throw new MigrationException('Missing notification storage role check.');
+    }
+    private function verifyStorageSystemCleanupActorSchema():void
+    {
+        $statement=$this->connection->prepare("SELECT IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=? AND TABLE_NAME='storage_objects' AND COLUMN_NAME='deleted_by_user_id'");$database=$this->expectedDatabase;$statement->bind_param('s',$database);$statement->execute();$nullable=$statement->get_result()->fetch_row()[0]??null;$statement->close();if($nullable!=='YES')throw new MigrationException('storage_objects.deleted_by_user_id must remain nullable.');
+        $statement=$this->connection->prepare("SELECT cc.CHECK_CLAUSE FROM information_schema.TABLE_CONSTRAINTS tc JOIN information_schema.CHECK_CONSTRAINTS cc ON cc.CONSTRAINT_SCHEMA=tc.CONSTRAINT_SCHEMA AND cc.CONSTRAINT_NAME=tc.CONSTRAINT_NAME WHERE tc.CONSTRAINT_SCHEMA=? AND tc.TABLE_NAME='storage_objects' AND tc.CONSTRAINT_NAME='chk_storage_objects_lifecycle_metadata'");$statement->bind_param('s',$database);$statement->execute();$clause=$statement->get_result()->fetch_row()[0]??null;$statement->close();if(!is_string($clause)||StorageSystemCleanupActorSchema::normalize($clause)!==StorageSystemCleanupActorSchema::normalize(StorageSystemCleanupActorSchema::AFTER))throw new MigrationException('Invalid Storage System Cleanup Actor lifecycle constraint.');
+    }
+    private function assertCheckValues(string $table,string $constraint,array $expected):void{$statement=$this->connection->prepare("SELECT cc.CHECK_CLAUSE FROM information_schema.TABLE_CONSTRAINTS tc JOIN information_schema.CHECK_CONSTRAINTS cc ON cc.CONSTRAINT_SCHEMA=tc.CONSTRAINT_SCHEMA AND cc.CONSTRAINT_NAME=tc.CONSTRAINT_NAME WHERE tc.CONSTRAINT_SCHEMA=? AND tc.TABLE_NAME=? AND tc.CONSTRAINT_NAME=? AND tc.CONSTRAINT_TYPE='CHECK'");$database=$this->expectedDatabase;$statement->bind_param('sss',$database,$table,$constraint);$statement->execute();$clause=$statement->get_result()->fetch_row()[0]??null;$statement->close();if(!is_string($clause))throw new MigrationException("Missing check constraint {$constraint}.");preg_match_all("/'([^']+)'/",str_replace("\\'","'",$clause),$matches);if(array_values(array_unique($matches[1]??[]))!==$expected)throw new MigrationException("Invalid permitted values for {$constraint}.");}
 
     private function verifyFoundationSchema(bool $authenticationSecurityApplied,bool $employeeAdministrationApplied): void
     {

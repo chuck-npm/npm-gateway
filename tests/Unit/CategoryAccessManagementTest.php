@@ -16,7 +16,7 @@ use PHPUnit\Framework\TestCase;
 
 final class CategoryAccessManagementTest extends TestCase
 {
-    private array $categories=['finance'=>'Finance','human-resources'=>'Human Resources','marketing'=>'Marketing','admin'=>'Admin','credit-cards'=>'Credit Cards'];
+    private array $categories=['operations'=>'Operations','human-resources'=>'Human Resources','company-notices'=>'Company Notices','finance'=>'Finance','marketing'=>'Marketing','admin'=>'Admin','credit-cards'=>'Credit Cards'];
 
     public function testMigrationContainsApprovedSchemaAndGuardedRollback():void
     {
@@ -38,13 +38,13 @@ final class CategoryAccessManagementTest extends TestCase
 
     public function testBackfillCreatesExactApprovedMembershipsAndIsIdempotent():void
     {
-        $store=$this->storeWithUsers();$audits=new CategoryAccessAuditStore();$service=new CategoryAccessBackfillService($store,new CategoryAccessTransaction(),new AuditService($audits,new PublicIdGenerator()),new PublicIdGenerator(),new CategoryAccessClock(),$this->categories);
-        self::assertSame(9,$service->run()['created']);self::assertSame(0,$service->run()['created']);self::assertCount(9,$store->memberships());self::assertTrue($store->effective[1]['admin']);self::assertArrayNotHasKey('admin',$store->effective[2]);self::assertNotEmpty($audits->events);
+        $store=$this->storeWithUsers(true);$audits=new CategoryAccessAuditStore();$service=new CategoryAccessBackfillService($store,new CategoryAccessTransaction(),new AuditService($audits,new PublicIdGenerator()),new PublicIdGenerator(),new CategoryAccessClock(),$this->categories);
+        self::assertSame(14,$service->run()['created']);self::assertSame(0,$service->run()['created']);self::assertCount(14,$store->memberships());self::assertTrue($store->effective[1]['admin']);self::assertArrayNotHasKey('admin',$store->effective[2]);self::assertTrue($store->effective[3]['company-notices']);self::assertNotEmpty($audits->events);
     }
 
     public function testBackfillRefusesMissingRequiredUserWithoutWriting():void
     {
-        $store=$this->storeWithUsers();$store->users=array_slice($store->users,0,1);$service=new CategoryAccessBackfillService($store,new CategoryAccessTransaction(),new AuditService(new CategoryAccessAuditStore(),new PublicIdGenerator()),new PublicIdGenerator(),new CategoryAccessClock(),$this->categories);
+        $store=$this->storeWithUsers(true);$store->users=array_slice($store->users,0,1);$service=new CategoryAccessBackfillService($store,new CategoryAccessTransaction(),new AuditService(new CategoryAccessAuditStore(),new PublicIdGenerator()),new PublicIdGenerator(),new CategoryAccessClock(),$this->categories);
         $this->expectException(RuntimeException::class);try{$service->run();}finally{self::assertSame([],$store->memberships());}
     }
 
@@ -87,8 +87,8 @@ final class CategoryAccessManagementTest extends TestCase
 
     public function testGrantingTimAdminCreatesOnlyOneMembershipAndRealAudits():void
     {
-        $store=$this->storeWithUsers();foreach(array_keys($this->categories) as $category)$store->effective[1][$category]=true;foreach(['finance','human-resources','marketing','credit-cards'] as $category)$store->effective[2][$category]=true;$audits=new CategoryAccessAuditStore();$service=new CategoryAccessAdministrationService($store,new CategoryAccessTransaction(),new AuditService($audits,new PublicIdGenerator()),new PublicIdGenerator(),new CategoryAccessClock(),$this->categories);$actor=new AuthenticatedUser(1,11,str_repeat('C',26),str_repeat('E',26),'chuck','Chuck');$access=[str_repeat('C',26)=>array_fill_keys(array_keys($this->categories),true),str_repeat('T',26)=>array_fill_keys(array_keys($this->categories),true)];
-        self::assertSame(1,$service->applyChanges(['users'=>[str_repeat('C',26),str_repeat('T',26)],'access'=>$access],$actor));self::assertCount(10,$store->memberships());self::assertTrue($store->effective[2]['admin']);self::assertSame(['admin.category_access_granted','admin.category_access_updated'],array_column($audits->events,'event_type'));self::assertSame(0,$service->applyChanges(['users'=>[str_repeat('C',26),str_repeat('T',26)],'access'=>$access],$actor));self::assertCount(2,$audits->events);
+        $store=$this->storeWithUsers();foreach(array_keys($this->categories) as $category)$store->effective[1][$category]=true;foreach(['operations','finance','human-resources','company-notices','marketing','credit-cards'] as $category)$store->effective[2][$category]=true;$audits=new CategoryAccessAuditStore();$service=new CategoryAccessAdministrationService($store,new CategoryAccessTransaction(),new AuditService($audits,new PublicIdGenerator()),new PublicIdGenerator(),new CategoryAccessClock(),$this->categories);$actor=new AuthenticatedUser(1,11,str_repeat('C',26),str_repeat('E',26),'chuck','Chuck');$access=[str_repeat('C',26)=>array_fill_keys(array_keys($this->categories),true),str_repeat('T',26)=>array_fill_keys(array_keys($this->categories),true)];
+        self::assertSame(1,$service->applyChanges(['users'=>[str_repeat('C',26),str_repeat('T',26)],'access'=>$access],$actor));self::assertCount(14,$store->memberships());self::assertTrue($store->effective[2]['admin']);self::assertSame(['admin.category_access_granted','admin.category_access_updated'],array_column($audits->events,'event_type'));self::assertSame(0,$service->applyChanges(['users'=>[str_repeat('C',26),str_repeat('T',26)],'access'=>$access],$actor));self::assertCount(2,$audits->events);
     }
 
     public function testServiceRejectsOmittedOrUnknownUsersBeforeMutation():void
@@ -98,7 +98,7 @@ final class CategoryAccessManagementTest extends TestCase
     }
 
     private function administration(CategoryAccessMemoryStore $store):CategoryAccessAdministrationService{return new CategoryAccessAdministrationService($store,new CategoryAccessTransaction(),new AuditService(new CategoryAccessAuditStore(),new PublicIdGenerator()),new PublicIdGenerator(),new CategoryAccessClock(),$this->categories);}
-    private function storeWithUsers():CategoryAccessMemoryStore{$store=new CategoryAccessMemoryStore();$store->users=[['id'=>1,'public_id'=>str_repeat('C',26),'employee_id'=>11,'username'=>'chuck','status'=>'active','display_name'=>'Chuck Admin'],['id'=>2,'public_id'=>str_repeat('T',26),'employee_id'=>22,'username'=>'tim','status'=>'active','display_name'=>'Tim User']];return $store;}
+    private function storeWithUsers(bool $includeHayleigh=false):CategoryAccessMemoryStore{$store=new CategoryAccessMemoryStore();$store->users=[['id'=>1,'public_id'=>str_repeat('C',26),'employee_id'=>11,'username'=>'chuck','status'=>'active','display_name'=>'Chuck Admin'],['id'=>2,'public_id'=>str_repeat('T',26),'employee_id'=>22,'username'=>'tim','status'=>'active','display_name'=>'Tim User']];if($includeHayleigh)$store->users[]=['id'=>3,'public_id'=>str_repeat('H',26),'employee_id'=>33,'username'=>'hayleigh','status'=>'active','display_name'=>'Hayleigh Owens'];return $store;}
 }
 
 final class CategoryAccessMemoryStore implements CategoryAccessStoreInterface

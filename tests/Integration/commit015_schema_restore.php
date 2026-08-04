@@ -1,0 +1,6 @@
+<?php
+declare(strict_types=1);
+use NpmGateway\Database\DatabaseProfiles;
+use NpmGateway\Database\MySqlConnectionFactory;
+$application=require dirname(__DIR__,2).'/bootstrap/app.php';foreach(['application','migration'] as $profile){if(DatabaseProfiles::load($profile,$application['root'])['database']!=='npmgateway_test'){fwrite(STDERR,"Schema restore blocked: profiles must be npmgateway_test.\n");exit(2);}}
+$db=MySqlConnectionFactory::connect(DatabaseProfiles::load('migration',$application['root']));try{$exists=static function(mysqli $db,string $table):bool{$s=$db->prepare('SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?');$s->bind_param('s',$table);$s->execute();$found=$s->get_result()->fetch_row()!==null;$s->close();return $found;};if(!$exists($db,'storage_objects')||!$exists($db,'notification_storage_objects')){$migration=require dirname(__DIR__,2).'/database/migrations/202608020010_gateway_storage.php';$migration->up($db);echo "Disposable Migration 010 schema restored.\n";$actor=require dirname(__DIR__,2).'/database/migrations/202608020011_storage_system_cleanup_actor.php';$actor->up($db);echo "Disposable Migration 011 schema restored.\n";}else echo "Disposable storage schema present; verifier will confirm Migration 011.\n";}finally{$db->close();}

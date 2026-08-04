@@ -37,7 +37,7 @@ final class DashboardFoundationTest extends TestCase
  }
  public function testNavigationConfigurationUsesOnlyExistingDashboardRoute():void
  {
-  $items=Navigation::forRoute('/dashboard',dirname(__DIR__,2));self::assertCount(1,$items);self::assertSame('/dashboard',$items[0]['url']);self::assertTrue($items[0]['active']);
+  $items=Navigation::forRoute('/dashboard',dirname(__DIR__,2));self::assertCount(2,$items);self::assertSame('/dashboard',$items[0]['url']);self::assertTrue($items[0]['active']);self::assertSame('/notifications',$items[1]['url']);
  }
  public function testArchitectureBoundaries():void
  {

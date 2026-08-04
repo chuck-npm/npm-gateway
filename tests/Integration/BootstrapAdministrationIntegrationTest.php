@@ -108,7 +108,7 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
                 self::assertSame('sent', $result->credentialNotificationStatus);
                 self::assertSame(1, self::rowCount($connection, 'employees'));
                 self::assertSame(1, self::rowCount($connection, 'users'));
-                self::assertSame(5, self::rowCount($connection, 'user_category_access'));
+                self::assertSame(6, self::rowCount($connection, 'user_category_access'));
                 self::assertSame(2, self::rowCount($connection, 'audit_logs'));
                 foreach (['properties', 'employee_property_assignments', 'user_sessions', 'login_attempts'] as $table) {
                     self::assertSame(0, self::rowCount($connection, $table));
@@ -171,10 +171,10 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
                 self::assertSame('Corporate',$home->employeeClassLabel);
                 self::assertSame('Corporate Administrator',$home->jobTitle);
                 self::assertCount(12,$home->universalTools);
-                self::assertCount(5,$home->corporateTools);
-                self::assertCount(2,array_filter($home->universalTools,static fn($tool):bool=>$tool->enabled));self::assertSame('/employees',$home->universalTools[0]->route);self::assertSame('/properties',$home->universalTools[1]->route);
-                foreach(array_slice($home->universalTools,2) as $tool){self::assertFalse($tool->enabled);self::assertNull($tool->route);}
-                self::assertCount(2,array_filter($home->corporateTools,static fn($tool):bool=>$tool->enabled));self::assertSame('/human-resources',$home->corporateTools[1]->route);self::assertSame('/admin',$home->corporateTools[3]->route);
+                self::assertCount(6,$home->corporateTools);
+                self::assertCount(3,array_filter($home->universalTools,static fn($tool):bool=>$tool->enabled));self::assertSame('/employees',$home->universalTools[0]->route);self::assertSame('/properties',$home->universalTools[1]->route);self::assertSame('/notifications',$home->universalTools[3]->route);
+                foreach($home->universalTools as $tool){if(in_array($tool->key,['employee-directory','property-information','notifications'],true))continue;self::assertFalse($tool->enabled);self::assertNull($tool->route);}
+                self::assertCount(3,array_filter($home->corporateTools,static fn($tool):bool=>$tool->enabled));self::assertSame('/human-resources',$home->corporateTools[1]->route);self::assertSame('/company-notices',$home->corporateTools[2]->route);self::assertSame('/admin',$home->corporateTools[4]->route);
                 $csrfState=[];$response=(new DashboardController(new CsrfService($csrfState),new DashboardHomeService($dashboard,new UniversalToolProvider(),new CorporateToolsProvider($corporateAccess),$corporateAccess),$application['root'].'/resources/views'))->index(new AuthenticatedRequestContext($login->user,$login->session->reveal()));
                 self::assertSame(200,$response->status);self::assertStringContainsString('Corporate Tools',$response->body);self::assertStringContainsString('aria-label="Corporate tools menu"',$response->body);self::assertSame(3,substr_count($response->body,'gateway-navbar__disabled-item'));self::assertStringNotContainsString('href="#"',$response->body);
                 self::assertSame($beforeDashboard,[
@@ -222,7 +222,7 @@ final class BootstrapAdministrationIntegrationTest extends TestCase
                 $managerUser->bind_param('siss',$managerUserPublicId,$managerEmployeeId,$managerHash,$createdAt);$managerUser->execute();$managerUser->close();
                 $managerLogin=$authentication->authenticate(new LoginRequest('integrationmanager',$managerPassword),new ClientContext('192.0.2.11','Integration Agent',$clock->now()));
                 $managerHome=(new DashboardHomeService($dashboard,new UniversalToolProvider(),new CorporateToolsProvider($corporateAccess),$corporateAccess))->forRequest(new AuthenticatedRequestContext($managerLogin->user,$managerLogin->session->reveal()));
-                self::assertCount(12,$managerHome->universalTools);self::assertCount(5,$managerHome->corporateTools);
+                self::assertCount(12,$managerHome->universalTools);self::assertCount(6,$managerHome->corporateTools);
                 $managerCsrf=[];$managerResponse=(new DashboardController(new CsrfService($managerCsrf),new DashboardHomeService($dashboard,new UniversalToolProvider(),new CorporateToolsProvider($corporateAccess),$corporateAccess),$application['root'].'/resources/views'))->index(new AuthenticatedRequestContext($managerLogin->user,$managerLogin->session->reveal()));
                 self::assertStringContainsString('Universal Tools',$managerResponse->body);self::assertStringContainsString('Corporate Tools',$managerResponse->body);self::assertStringContainsString('Corporate tools menu',$managerResponse->body);
                 $maintenancePublicId=$ids->generate();$maintenanceEmployee=$connection->prepare("INSERT INTO employees (public_id,employee_number,employee_class,first_name,last_name,business_email,personal_email,company_phone,personal_phone,job_title,employment_status,start_date) VALUES (?,'NPM999996','maintenance','Integration','Maintenance',NULL,'private@example.test',NULL,'+1555010101','Maintenance Technician','active','2026-07-28')");

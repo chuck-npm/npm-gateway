@@ -13,7 +13,11 @@ use NpmGateway\Services\SystemInitializationService;
 use NpmGateway\Services\CorporateContextSeeder;
 use NpmGateway\Console\NotificationCheckCommand;
 use NpmGateway\Console\CategoryAccessBackfillCommand;
+use NpmGateway\Console\UploadPreflightCommand;
+use NpmGateway\Console\StorageDiagnosticCommand;
 use NpmGateway\Services\CategoryAccessBackfillService;
+use NpmGateway\Services\OperationsAccessBackfillService;
+use NpmGateway\Console\OperationsAccessBackfillCommand;
 
 $projectRoot = dirname(__DIR__);
 
@@ -32,7 +36,12 @@ $help = implode(PHP_EOL, [
     '  bootstrap:administrator',
     '  seed:corporate-context',
     '  category-access:backfill',
+    '  operations-access:backfill',
     '  notification:check',
+    '  upload:check',
+    '  storage:check',
+    '  storage:test',
+    '  storage:cleanup-temporary [hours]',
 ]) . PHP_EOL;
 
 if ($command === '' || in_array($command, ['help', '--help', '-h'], true)) {
@@ -74,6 +83,20 @@ if ($command === 'bootstrap:administrator') {
 if($command==='notification:check'){
     if(count($arguments)!==1){fwrite(STDERR,"This command does not accept arguments.\n");exit(2);}$result=NotificationCheckCommand::run(require $projectRoot.'/config/hr-employee-notification.php');fwrite(STDOUT,$result['stdout']);fwrite(STDERR,$result['stderr']);exit($result['exit_code']);
 }
+if($command==='upload:check'){
+    if(count($arguments)!==1){fwrite(STDERR,"This command does not accept arguments.\n");exit(2);}$result=UploadPreflightCommand::run();fwrite(STDOUT,$result['stdout']);fwrite(STDERR,$result['stderr']);exit($result['exit_code']);
+}
+if($command==='storage:test'){
+    if(count($arguments)!==1){fwrite(STDERR,"This command does not accept arguments.\n");exit(2);}$storage=require $projectRoot.'/config/storage.php';$profiles=['application'=>DatabaseProfiles::load('application',$application['root'])['database'],'migration'=>DatabaseProfiles::load('migration',$application['root'])['database'],'environment'=>$application['config']['app']['environment']];$result=StorageDiagnosticCommand::run($storage,$profiles);fwrite(STDOUT,$result['stdout']);fwrite(STDERR,$result['stderr']);exit($result['exit_code']);
+}
+if($command==='storage:check'){
+    if(count($arguments)!==1){fwrite(STDERR,"This command does not accept arguments.\n");exit(2);}$raw=require $projectRoot.'/config/storage.php';try{$storage=\NpmGateway\Services\StorageConfiguration::fromArray($raw);$lines=['Gateway Storage configuration: ready','AWS SDK: '.(class_exists(\Aws\S3\S3Client::class)?'available '.\Aws\Sdk::VERSION:'unavailable'),'Endpoint host: '.$storage->endpointHost(),'Region: '.$storage->region,'Bucket: '.$storage->container,'Attachment prefix: '.$storage->attachmentPrefix,'Image prefix: '.$storage->imagePrefix,'TLS verification: enabled','ZipArchive: '.(class_exists(ZipArchive::class)?'available':'unavailable'),'Provider request made: no'];fwrite(STDOUT,implode("\n",$lines)."\n");exit(class_exists(\Aws\S3\S3Client::class)&&class_exists(ZipArchive::class)?0:1);}catch(Throwable){fwrite(STDERR,"Gateway Storage configuration is blocked. No provider request was made.\n");exit(1);}
+}
+if($command==='storage:cleanup-temporary'){
+    $applicationProfile=DatabaseProfiles::load('application',$application['root']);$migrationProfile=DatabaseProfiles::load('migration',$application['root']);
+    if(($applicationProfile['database']??'')!=='npmgateway_test'||($migrationProfile['database']??'')!=='npmgateway_test'){fwrite(STDERR,"Storage cleanup blocked: application and migration profiles must both resolve to npmgateway_test.\n");exit(2);}
+    $hours=isset($arguments[1])?(int)$arguments[1]:24;if($hours<1||count($arguments)>2){fwrite(STDERR,"Usage: storage:cleanup-temporary [hours]\n");exit(2);}$container=ServiceProvider::build($application);try{$result=$container->get(\NpmGateway\Services\TemporaryStorageCleanupService::class)->run(null,$hours);fwrite(STDOUT,"Temporary storage cleanup: {$result['examined']} examined, {$result['deleted']} deleted, {$result['skipped']} skipped, {$result['failed']} failed.\n");exit($result['failed']?1:0);}finally{$container->get(mysqli::class)->close();}
+}
 if($command==='seed:corporate-context'){
     if(count($arguments)!==1){fwrite(STDERR,"This command does not accept arguments.\n");exit(2);}$profile=DatabaseProfiles::load('application',$application['root']);if(!in_array($profile['app_env'],['local','testing'],true)||!in_array($profile['host'],['127.0.0.1','localhost','::1'],true)||($profile['database']!=='npmgateway'&&!str_ends_with($profile['database'],'_test'))){fwrite(STDERR,"Corporate context seeding is restricted to approved local databases.\n");exit(2);}$container=ServiceProvider::build($application);try{$result=$container->get(CorporateContextSeeder::class)->seed();fwrite(STDOUT,$result->created?"Corporate operational context created.\n":"Corporate operational context already exists; no changes made.\n");exit(0);}catch(Throwable $e){fwrite(STDERR,str_replace(["\r","\n"],' ',$e->getMessage())."\n");exit(1);}finally{$container->get(mysqli::class)->close();}
 }
@@ -82,6 +105,11 @@ if($command==='category-access:backfill'){
     if(!in_array($profile['app_env'],['local','testing'],true)||!in_array($profile['host'],['127.0.0.1','localhost','::1'],true)||($profile['database']!=='npmgateway'&&!str_ends_with($profile['database'],'_test'))){fwrite(STDERR,"Category access backfill is restricted to approved local databases.\n");exit(2);}
     $container=ServiceProvider::build($application);
     try{$result=(new CategoryAccessBackfillCommand($container->get(CategoryAccessBackfillService::class)))->run(array_slice($arguments,1));fwrite(STDOUT,"Category access backfill complete: {$result['created']} created, {$result['already_present']} already present, {$result['conflicts']} conflicts, {$result['total']} final approved memberships.\n");exit(0);}catch(Throwable $e){fwrite(STDERR,str_replace(["\r","\n"],' ',$e->getMessage())."\n");exit(1);}finally{$container->get(mysqli::class)->close();}
+}
+if($command==='operations-access:backfill'){
+    $profile=DatabaseProfiles::load('application',$application['root']);
+    if(!in_array($profile['app_env'],['local','testing'],true)||!in_array($profile['host'],['127.0.0.1','localhost','::1'],true)||($profile['database']!=='npmgateway'&&!str_ends_with($profile['database'],'_test'))){fwrite(STDERR,"Operations access backfill is restricted to approved local databases.\n");exit(2);}
+    $container=ServiceProvider::build($application);try{$result=(new OperationsAccessBackfillCommand($container->get(OperationsAccessBackfillService::class)))->run(array_slice($arguments,1));fwrite(STDOUT,"Operations access backfill complete: {$result['created']} created, {$result['already_present']} existing, {$result['conflicts']} conflicts, {$result['total']} final Operations memberships.\n");exit(0);}catch(Throwable $e){fwrite(STDERR,str_replace(["\r","\n"],' ',$e->getMessage())."\n");exit(1);}finally{$container->get(mysqli::class)->close();}
 }
 
 if (!in_array($command, ['migrate', 'migrate:status', 'migrate:rollback', 'schema:verify'], true)) {

@@ -8,9 +8,10 @@ $field=static function(string $key,string $label,string $type='text',string $att
     ?><div class="col-md-6"><label class="form-label" for="employee-<?= $key ?>"><?= $escape($label) ?><?= $required?'':' <span class="form-text">(Optional)</span>' ?></label><input class="form-control<?= $invalid($key) ?>" id="employee-<?= $key ?>" name="<?= $key ?>" type="<?= $type ?>" value="<?= $escape($old($key)) ?>"<?= $required?' required':'' ?> <?= $attrs ?>><?php if(isset($errors[$key])):?><div class="invalid-feedback"><?= $escape((string)$errors[$key]) ?></div><?php endif;?></div><?php
 };
 ?>
-<form method="post" action="/human-resources/employees" class="gateway-property-form" novalidate>
+<form method="post" action="/human-resources/employees" class="gateway-property-form" data-processing-form data-processing-message="Creating employee and sending notifications…">
 <input type="hidden" name="_token" value="<?= $escape($csrfToken) ?>">
-<?php if($errors!==[]):?><div class="alert gateway-alert gateway-alert--danger" role="alert"><strong>We could not create the employee.</strong><p class="mb-0">Review the highlighted fields and try again.</p></div><?php endif;?>
+<input type="hidden" name="employee_submission_token" value="<?= $escape($submissionToken) ?>">
+<?php if($errors!==[]):?><div class="alert gateway-alert gateway-alert--danger" role="alert"><strong>We could not create the employee.</strong><p class="mb-0"><?= isset($errors['submission'])?$escape((string)$errors['submission']):'Review the highlighted fields and try again.' ?></p></div><?php endif;?>
 <section class="gateway-form-section"><h2 class="gateway-form-section-title">Employee Information</h2><div class="row gateway-form-grid">
 <div class="col-md-6"><span class="form-label d-block">Employee Number</span><p>Generated automatically</p></div>
 <?php $field('first_name','First Name','','autocomplete="given-name"');$field('last_name','Last Name','','autocomplete="family-name"');$field('job_title','Job Title'); ?>

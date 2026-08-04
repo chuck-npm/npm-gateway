@@ -15,6 +15,7 @@ $pageTitle = isset($pageTitle) ? (string) $pageTitle : $applicationName;
           rel="stylesheet"
           integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
           crossorigin="anonymous">
-    <link href="/assets/css/gateway.css" rel="stylesheet">
+    <?php if(!empty($quillAssets)): ?><link href="/assets/vendor/quill/2.0.3/quill.snow.css" rel="stylesheet"><?php endif; ?>
+    <link href="/assets/css/gateway.css?v=20260803-typography" rel="stylesheet">
 </head>
 <body class="gateway-shell">
