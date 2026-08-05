@@ -131,9 +131,21 @@ The production notification transport is an injected PHPMailer SMTP adapter usin
 
 Operations is a first-class Corporate authorization category and is never inferred from Admin, Finance, Marketing, employee class, or title. Initial backfill membership is Chuck and Tim only; later changes use Category Access.
 
+Application Reviews is a separate first-class Corporate category. Central reviewers require explicit effective `application-reviews` membership; Operations, Admin, employee class, Property Access, username, and identity do not imply it. Managers retain property-scoped Community Actions access, while Corporate reviewers use the function-scoped centralized workspace. Both perspectives operate on the same review and history records.
+
 Corporate cards are universally visible to authenticated users, while destinations and controllers are authorized solely through database-backed category membership. Category configuration defines the fixed vocabulary and display labels only; it must never contain executable username membership lists. Employee class, title, email, assignment, and username do not confer access. Inactive users are denied without deleting their memberships.
 
 Migration 007 is schema-only. Legacy membership backfill is a guarded, transactional, auditable local command. Fresh administrator bootstrap creates all five memberships atomically. Administration must preserve at least one active Admin and must prevent the acting administrator from removing their own Admin membership.
+
+Property assignment and Property Access are distinct authorities. Assignments preserve employment and operational history; explicit database-backed Property Access grants authorize an active Gateway user to an active community. Employee class, Category Access, Admin access, and assignment alone never imply Property Access. Property-scoped controllers must use the centralized PropertyAccessService.
+
+Community Actions are always property-scoped. Every Community Action is recorded and authorized against both the authenticated user and the selected property. The property is derived exclusively from the authorized route context and must never be selected, submitted, or overridden through form data. Property Access is rechecked on every property workspace and action request. A Property Access grant determines which property workspaces a user may open; it does not modify employment assignment history.
+
+Managers perform property-scoped work. Corporate reviews and manages that work through centralized function-scoped workspaces. Both views operate on the same business records and append-only history. Corporate function authorization does not imply manager Property Access, and Property Access does not imply Corporate function authorization.
 # Company communications
 
 Global Notifications are assigned independently of Corporate category access. Acknowledgment proves reading, not legal agreement. Historical audience, first-view, acknowledgment, and delivery evidence must not be silently recalculated or deleted.
+
+Gateway-generated notifications are delivered only to active eligible employees classified as `corporate` or `manager`. `maintenance` employees are never notification recipients and are excluded before recipient materialization, email delivery, acknowledgment tracking, and reporting. Category Access, an email address, a user record, or a property assignment cannot override this platform rule. Unknown future classifications are denied by default.
+
+Emergency Contact Information is employee-owned restricted profile data. Self-service identity comes only from the authenticated session, one current contact is permitted per employee, and no administrator or category grant may redirect the self-service route to another employee. Contact values are excluded from URLs, directories, notifications, email, logs, and audit metadata. Maintenance access requires a future authorized HR workflow.

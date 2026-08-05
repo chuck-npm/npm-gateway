@@ -10,21 +10,18 @@ final class UniversalToolProvider implements UniversalToolProviderInterface
         $definitions=[
             ['employee-directory','Company Directory','Find employees and approved company contact information.','People & Contacts'],
             ['property-information','Property Information','View community addresses, contacts, websites, and operational details.','Communities'],
-            ['company-documents','Company Documents','Access company forms, manuals, policies, and shared documents.','Documents'],
+            ['community-actions','Community Actions','Daily property management tasks and operational activities.','Communities'],
             ['notifications','Notifications','Review company notices and required communications.','Communications'],
             ['credit-card-purchases','Credit Card Purchases','Submit receipts and review your company card purchases.','Finance'],
             ['large-file-transfers','Large File Transfers','Securely share large files with other Gateway users.','Files'],
+            ['company-documents','Company Documents','Access company forms, manuals, policies, and shared documents.','Documents'],
             ['order-supplies','Order Supplies','Request commonly used property and office supplies.','Purchasing'],
-            ['time-off-requests','Time Off Requests','Submit and review your paid-time-off requests.','Human Resources'],
-            ['policies-procedures','Policies & Procedures','Find current NPM policies and operating procedures.','Documents'],
-            ['training-library','Training Library','Access training material, guides, and instructional resources.','Training'],
-            ['support-requests','Support Requests','Request operational assistance from corporate staff.','Operations Support'],
-            ['help-desk','Help Desk','Report a Gateway or technology issue.','Technical Support'],
         ];
         return array_map(static fn(array $tool,int $index):ToolCard=>$tool[0]==='employee-directory'
             ?new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Open directory','/employees',true,($index+1)*10,null,'Open Company Directory','employees.index')
             :($tool[0]==='property-information'?new ToolCard($tool[0],'Properties','View company property contact and operational information.',$tool[3],'Open properties','/properties',true,($index+1)*10,null,'Open properties','properties.index')
+            :($tool[0]==='community-actions'?new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Open Community Actions','/community-actions',true,($index+1)*10,null,'Open Community Actions','community-actions.index')
             :($tool[0]==='notifications'?new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Open notifications','/notifications',true,($index+1)*10,null,'Open Notifications','notifications.index')
-            :new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Not yet enabled',null,false,($index+1)*10,'Planned'))),$definitions,array_keys($definitions));
+            :new ToolCard($tool[0],$tool[1],$tool[2],$tool[3],'Not yet enabled',null,false,($index+1)*10,'Planned')))),$definitions,array_keys($definitions));
     }
 }

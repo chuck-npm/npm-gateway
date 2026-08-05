@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 $footerText = isset($footerText) ? (string) $footerText : 'NPM Gateway';
+$processingOverlayPath = dirname(__DIR__, 3) . '/public/assets/js/processing-overlay.js';
+$processingOverlayVersion = is_file($processingOverlayPath) ? (string) filemtime($processingOverlayPath) : '1';
 ?>
 <footer class="gateway-footer">
     <div class="container gateway-footer__inner">
@@ -14,7 +16,8 @@ $footerText = isset($footerText) ? (string) $footerText : 'NPM Gateway';
         crossorigin="anonymous"></script>
 <script type="module" src="/assets/js/phone-mask.js"></script>
 <script type="module" src="/assets/js/employee-username.js"></script>
-<script type="module" src="/assets/js/processing-overlay.js"></script>
+<script type="module" src="/assets/js/processing-overlay.js?v=<?= rawurlencode($processingOverlayVersion) ?>"></script>
+<script type="module" src="/assets/js/character-counter.js"></script>
 <?php if(!empty($quillAssets)): ?><script src="/assets/vendor/quill/2.0.3/quill.js"></script><script type="module" src="/assets/js/company-notice-editor.js"></script><?php endif; ?>
 <?php if(!empty($companyNoticeDraftAssets)): ?><script type="module" src="/assets/js/company-notice-draft-discard.js"></script><?php endif; ?>
 </body>

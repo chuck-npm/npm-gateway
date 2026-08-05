@@ -1,0 +1,19 @@
+$ErrorActionPreference = 'Stop'
+function Invoke-Gateway([string[]]$Arguments){& php bin/gateway @Arguments;if($LASTEXITCODE -ne 0){throw "gateway failed: $($Arguments -join ' ')"}}
+function Invoke-Php([string[]]$Arguments){& php @Arguments;if($LASTEXITCODE -ne 0){throw "php failed: $($Arguments -join ' ')"}}
+function Assert-Profile([string]$Profile){$output=& php bin/gateway database:check $Profile 2>&1;$code=$LASTEXITCODE;$output|ForEach-Object{Write-Host $_};if($code -ne 0-or($output-join"`n")-notmatch'(?m)^Selected database: npmgateway_test$'){throw "$Profile is not exactly npmgateway_test; mutation refused."}}
+$savedDb=$env:DB_NAME;$savedMigration=$env:MIGRATION_DB_NAME
+try{
+ Write-Host '===== NORMAL FINGERPRINT BEFORE =====';$env:DB_NAME='npmgateway';$env:MIGRATION_DB_NAME='npmgateway';$normalBefore=(& php tests/Integration/database_fingerprint.php 2>&1)-join"`n";if($LASTEXITCODE-ne 0-or$normalBefore-notmatch'^npmgateway [a-f0-9]{64}$'){throw'Normal fingerprint failed.'};Write-Host $normalBefore
+ $env:DB_NAME='npmgateway_test';$env:MIGRATION_DB_NAME='npmgateway_test'
+ Write-Host '===== PROFILE GATE ====='; Assert-Profile 'application'; Assert-Profile 'migration'
+ Write-Host '===== STATUS 001-011 =====';$statusBefore=(& php bin/gateway migrate:status 2>&1)-join"`n";if($LASTEXITCODE-ne 0){throw'Migration status failed.'};Write-Host $statusBefore;foreach($id in @('202607270001','202607270002','202607310003','202607310004','202607310005','202608010006','202608010007','202608020008','202608020009','202608020010','202608020011')){if($statusBefore-notmatch"(?m)^$id\S*\s+Ran\s"){throw"Migration $id is not applied."}}
+ if($statusBefore-match'(?m)^202608030012_operations_category\s+Ran\s'){Write-Host '===== RECOVER INTERRUPTED DISPOSABLE RUN =====';Invoke-Php @('tests/Integration/operations_disposable.php','cleanup');Invoke-Gateway @('migrate:rollback')}
+ Write-Host '===== APPLY 012 =====';Invoke-Gateway @('migrate');Invoke-Gateway @('schema:verify');Invoke-Php @('tests/Integration/operations_disposable.php','seed')
+ Write-Host '===== BACKFILL =====';Invoke-Gateway @('operations-access:backfill');Invoke-Php @('tests/Integration/operations_disposable.php','verify');Invoke-Gateway @('operations-access:backfill')
+ Write-Host '===== ROLLBACK GUARD =====';& php bin/gateway migrate:rollback;if($LASTEXITCODE-eq 0){throw'Rollback unexpectedly succeeded with Operations memberships.'};Write-Host 'rollback_guard=refused'
+ Invoke-Php @('tests/Integration/operations_disposable.php','remove-operations');Invoke-Gateway @('migrate:rollback');Write-Host 'rollback_without_operations=succeeded';Invoke-Gateway @('migrate');Invoke-Gateway @('schema:verify')
+ Write-Host '===== FINAL BACKFILL =====';Invoke-Gateway @('operations-access:backfill');Invoke-Php @('tests/Integration/operations_disposable.php','verify');Invoke-Php @('tests/Integration/operations_disposable.php','cleanup');Invoke-Php @('tests/Integration/operations_disposable.php','residue');Invoke-Gateway @('schema:verify');$finalStatus=(& php bin/gateway migrate:status 2>&1)-join"`n";if($LASTEXITCODE-ne 0-or$finalStatus-match'Pending'){throw'Final migration status is not fully applied.'};Write-Host $finalStatus
+ Write-Host '===== FULL PHPUNIT TWICE =====';& vendor/bin/phpunit.bat;if($LASTEXITCODE-ne 0){throw'First PHPUnit pass failed.'};& vendor/bin/phpunit.bat;if($LASTEXITCODE-ne 0){throw'Second PHPUnit pass failed.'}
+ $env:DB_NAME='npmgateway';$env:MIGRATION_DB_NAME='npmgateway';Write-Host '===== NORMAL FINGERPRINT AFTER =====';$normalAfter=(& php tests/Integration/database_fingerprint.php 2>&1)-join"`n";if($LASTEXITCODE-ne 0-or$normalAfter-ne$normalBefore){throw'Normal npmgateway fingerprint changed.'};Write-Host $normalAfter;Write-Host 'normal_fingerprint_unchanged=yes'
+}finally{$env:DB_NAME=$savedDb;$env:MIGRATION_DB_NAME=$savedMigration}

@@ -20,7 +20,7 @@ final class NotificationsNavigationTest extends TestCase
  }
  private function render(string $view):string
  {
-  $root=dirname(__DIR__,2);$user=new AuthenticatedUser(1,2,str_repeat('U',26),str_repeat('E',26),'chuck','Chuck Test','Administrator','corporate');$notificationCount=new NotificationCount(0);$navbarCorporateItems=[];$logoutCsrfToken='csrf';$csrfToken='csrf';$success='';
+  $root=dirname(__DIR__,2);$user=new AuthenticatedUser(1,2,str_repeat('U',26),str_repeat('E',26),'chuck','Chuck Test','Administrator','corporate');$notificationCount=new NotificationCount(0);$navbarCorporateItems=[];$logoutCsrfToken='csrf';$csrfToken='csrf';$success='';$canCreateNotice=false;
   if($view==='index'){$filter='outstanding';$notices=[];}else{$notice=['public_id'=>str_repeat('N',26),'summary'=>'A new employee has joined NPM Properties.','payload'=>['employee_name'=>'Kathrina Petty','job_title'=>'Manager','start_date'=>'2026-08-02','company_phone'=>'+15551234567','business_email'=>'kathrina@example.test','primary_property'=>'Corporate'],'published_at'=>'2026-08-02 03:42:00','priority'=>'normal','acknowledged_at'=>null];$displayPayload=(new \NpmGateway\Services\NotificationPresentationService(new \NpmGateway\Support\CompanyDateFormatter(),new \NpmGateway\Support\PhoneFormatter()))->employeeFields($notice['payload']);}
   if($view==='show'){$notice['notification_type']='employee_created';$notice['title']='New Employee';$notice['requires_acknowledgment']=1;}ob_start();require $root.'/resources/views/notifications/'.$view.'.php';return (string)ob_get_clean();
  }

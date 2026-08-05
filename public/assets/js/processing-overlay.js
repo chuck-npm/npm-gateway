@@ -7,7 +7,9 @@ function resetForm(form) {
     form.removeAttribute('aria-busy');
     form.querySelectorAll('button[type="submit"], input[type="submit"], input[type="image"]').forEach((control) => {
         if (control.dataset.processingWasDisabled === 'false') control.disabled = false;
+        if (control.dataset.processingClickedSubmitter === 'true') control.removeAttribute('aria-disabled');
         delete control.dataset.processingWasDisabled;
+        delete control.dataset.processingClickedSubmitter;
     });
 }
 
@@ -27,14 +29,19 @@ export function initializeProcessingOverlays(root = document) {
                 event.preventDefault();
                 return;
             }
+            const submitter = event.submitter?.form === form ? event.submitter : null;
+            if (event.defaultPrevented || !form.checkValidity()) return;
+            form.dataset.processingSubmitted = 'true';
+            form.setAttribute('aria-busy', 'true');
+            form.querySelectorAll('button[type="submit"], input[type="submit"], input[type="image"]').forEach((control) => {
+                control.dataset.processingWasDisabled = String(control.disabled);
+                if (control === submitter) {
+                    control.dataset.processingClickedSubmitter = 'true';
+                    control.setAttribute('aria-disabled', 'true');
+                } else control.disabled = true;
+            });
             queueMicrotask(() => {
-                if (event.defaultPrevented || !form.checkValidity() || form.dataset.processingSubmitted === 'true') return;
-                form.dataset.processingSubmitted = 'true';
-                form.setAttribute('aria-busy', 'true');
-                form.querySelectorAll('button[type="submit"], input[type="submit"], input[type="image"]').forEach((control) => {
-                    control.dataset.processingWasDisabled = String(control.disabled);
-                    control.disabled = true;
-                });
+                if (event.defaultPrevented) { resetForm(form); return; }
                 if (!overlay) return;
                 const message = overlay.querySelector('[data-processing-overlay-message]');
                 if (message) message.textContent = form.dataset.processingMessage || FALLBACK_MESSAGE;

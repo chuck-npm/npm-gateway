@@ -1,0 +1,15 @@
+<?php
+declare(strict_types=1);
+use PHPUnit\Framework\TestCase;
+final class EmployeeEmergencyContactTest extends TestCase
+{
+ public function testMigrationDeclaresNarrowRestrictiveSchemaAndRollbackGuard():void{$s=(string)file_get_contents(dirname(__DIR__,2).'/database/migrations/202608040013_employee_emergency_contacts.php');foreach(['employee_emergency_contacts','UNIQUE KEY uq_employee_emergency_contacts_public_id','UNIQUE KEY uq_employee_emergency_contacts_employee','ON UPDATE RESTRICT ON DELETE RESTRICT','alternate_phone VARCHAR(30) NULL','utf8mb4_0900_ai_ci','Cannot roll back Emergency Contact Information'] as $required)self::assertStringContainsString($required,$s);foreach(['address','email','medical','date_of_birth','notes'] as $forbidden)self::assertStringNotContainsString($forbidden,$s);}
+ public function testRoutesMenuAndPrivateFormContract():void
+ {
+  $root=dirname(__DIR__,2);$routes=require $root.'/routes/web.php';self::assertSame(['GET','POST'],$routes['/my/emergency-contact']['methods']);self::assertSame(['authentication'],$routes['/my/emergency-contact']['middleware']);$nav=(string)file_get_contents($root.'/resources/views/components/navbar.php');self::assertLessThan(strpos($nav,'Sign out'),strpos($nav,'Emergency Contact Information'));$view=(string)file_get_contents($root.'/resources/views/my/emergency-contact.php');
+  foreach(['Emergency Contact Information','Keep this information current','This information is restricted','first_name','last_name','relationship','primary_phone','alternate_phone','Save Emergency Contact','data-processing-form','data-phone-mask','inputmode="tel"','autocomplete="tel"','col-12 col-md-6','aria-describedby'] as $required)self::assertStringContainsString($required,$view);
+  self::assertStringNotContainsString('<form method="post" action="/my/emergency-contact" data-processing-overlay',$view);foreach(['address','email','medical','notes','<script','style=','sidebar'] as $forbidden)self::assertStringNotContainsString($forbidden,$view);self::assertStringContainsString('href="/dashboard">Cancel',$view);
+ }
+ public function testControllerDerivesIdentityAndUsesNoStore():void{$s=(string)file_get_contents(dirname(__DIR__,2).'/app/Http/Controllers/EmployeeEmergencyContactController.php');self::assertStringContainsString("'Cache-Control'=>'private, no-store'",$s);foreach(['employee_id','employee_public_id','user_id','target_username','query'] as $unsafe)self::assertStringNotContainsString("post['{$unsafe}']",$s);}
+ public function testServiceNeverCreatesEmailOrNotificationSideEffectsAndAuditsSafely():void{$s=(string)file_get_contents(dirname(__DIR__,2).'/app/Services/EmployeeEmergencyContactService.php');foreach(['employee.emergency_contact_created','employee.emergency_contact_updated','alternate_phone_present'] as $required)self::assertStringContainsString($required,$s);foreach(['Notification','Email','first_name\'=>$data','primary_phone\'=>$data','relationship\'=>$data'] as $forbidden)self::assertStringNotContainsString($forbidden,$s);}
+}

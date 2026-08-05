@@ -6,7 +6,7 @@ class FakeInput {
     constructor(value = '', marked = true) { this.value = value; this.marked = marked; this.dataset = {}; this.listeners = []; this.selectionStart = value.length; }
     addEventListener(type, listener) { if (type === 'input') this.listeners.push(listener); }
     setSelectionRange(start) { this.selectionStart = start; }
-    enter(value) { this.value = value; this.selectionStart = value.length; this.listeners.forEach((listener) => listener()); }
+    enter(value, cursor = value.length) { this.value = value; this.selectionStart = cursor; this.listeners.forEach((listener) => listener()); }
 }
 class FakeRoot { constructor(inputs) { this.inputs = inputs; } querySelectorAll(selector) { return selector === '[data-phone-mask]' ? this.inputs.filter((input) => input.marked) : []; } }
 
@@ -28,4 +28,10 @@ test('reinitialization attaches no duplicate listener and no marked fields is sa
 });
 test('invalid eleventh digit preserves the last valid value', () => {
     const input = new FakeInput('2294495184');initPhoneMasks(new FakeRoot([input]));input.enter('22944951845');assert.equal(input.value, '(229) 449-5184');
+});
+test('backspace, delete, selection replacement, and cursor position follow the shared mask', () => {
+    const input = new FakeInput('2293544477');initPhoneMasks(new FakeRoot([input]));
+    input.enter('(229) 354-447', 13);assert.equal(input.value, '(229) 354-447');assert.equal(input.selectionStart, 13);
+    input.enter('(229) 354447', 9);assert.equal(input.value, '(229) 354-447');assert.equal(input.selectionStart, 9);
+    input.enter('(706) 354-447', 4);assert.equal(input.value, '(706) 354-447');assert.equal(input.selectionStart, 4);
 });

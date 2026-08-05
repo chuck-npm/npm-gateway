@@ -58,6 +58,7 @@ $logoutCsrfToken = isset($logoutCsrfToken) ? (string) $logoutCsrfToken : '';
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end gateway-navbar__menu">
                         <?php if ($navbarUserContext !== ''): ?><li><span class="dropdown-item-text gateway-navbar__context"><?= htmlspecialchars($navbarUserContext,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?></span></li><li><hr class="dropdown-divider"></li><?php endif; ?>
+                        <li><a class="dropdown-item" href="/my/emergency-contact">Emergency Contact Information</a></li>
                         <?php if ($logoutCsrfToken !== ''): ?><li><form method="post" action="/logout"><input type="hidden" name="_token" value="<?= htmlspecialchars($logoutCsrfToken,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?>"><button class="dropdown-item" type="submit">Sign out</button></form></li><?php endif; ?>
                     </ul>
                 </li>

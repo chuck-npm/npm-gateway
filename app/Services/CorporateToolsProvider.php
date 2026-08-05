@@ -14,6 +14,7 @@ final class CorporateToolsProvider implements CorporateToolsProviderInterface
             ['operations','Operations','Warehouse inventory, development, and operational resources.','Operations','/corporate/operations','corporate.operations.index'],
             ['human-resources','Human Resources','Manage employees, time off, timecards, payroll documents, and personnel records.','Human Resources','/human-resources','hr.index'],
             ['company-notices','Company Notices','Create and review official company communications.','Communications','/company-notices','company-notices.index'],
+            ['application-reviews','Application Reviews','Review prospect submissions from all communities.','Corporate','/corporate/application-reviews','corporate.application-reviews.index'],
             ['finance','Finance','Access credit card purchases, reconciliations, invoices, and financial reporting.','Finance',null,null],
             ['marketing','Marketing','Manage property websites, advertising, leads, announcements, and marketing resources.','Marketing','/corporate/marketing','corporate.marketing.index'],
             ['admin','Admin','Manage properties, Gateway users, assignments, and system configuration.','Administration','/admin','admin.index'],

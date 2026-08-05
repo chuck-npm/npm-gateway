@@ -12,7 +12,7 @@ ob_start();
  <?php if ($home->jobTitle !== ''): ?><span class="gateway-welcome-role"><?= $escape($home->jobTitle) ?></span><?php endif; ?>
 </section>
 <?php
-$toolSectionTitle='Universal Tools';$toolSectionDescription='Functions available to every Gateway user.';$toolSectionId='universal-tools';$toolSectionScope='12 tools';$toolSectionCards=array_map(static function($card)use($notificationCount){if($card->key!=='notifications'||$notificationCount===null)return $card;return new \NpmGateway\ValueObjects\ToolCard($card->key,$card->title,$card->description,$card->categoryLabel,$card->footerLabel,$card->route,$card->enabled,$card->sortOrder,$notificationCount->label(),$card->accessibilityLabel,$card->routeName);},$home->universalTools);
+$toolSectionTitle='Universal Tools';$toolSectionDescription='Functions available to every Gateway user.';$toolSectionId='universal-tools';$toolSectionCards=array_map(static function($card)use($notificationCount){if($card->key!=='notifications'||$notificationCount===null)return $card;return new \NpmGateway\ValueObjects\ToolCard($card->key,$card->title,$card->description,$card->categoryLabel,$card->footerLabel,$card->route,$card->enabled,$card->sortOrder,$notificationCount->label(),$card->accessibilityLabel,$card->routeName);},$home->universalTools);$toolSectionScope=count($toolSectionCards).' tools';
 require $components.'/tool-section.php';
 $toolSectionTitle='Corporate Tools';$toolSectionDescription='Corporate categories are visible to every Gateway user; access is assigned separately.';$toolSectionId='corporate-tools';$toolSectionScope='5 categories';$toolSectionCards=$home->corporateTools;
 require $components.'/tool-section.php';

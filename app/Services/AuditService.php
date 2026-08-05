@@ -30,6 +30,7 @@ final class AuditService
         $this->assertSafe($metadata);$this->audits->insert(['public_id'=>$this->publicIds->generate(),'user_id'=>null,'employee_id'=>null,'property_id'=>$propertyId,'event_type'=>$eventType,'entity_type'=>'property','entity_id'=>$propertyId,'entity_public_id'=>$propertyPublicId,'description'=>$description,'metadata'=>$metadata,'created_at'=>$createdAt]);
     }
     public function recordSystem(string $eventType,string $entityType,int $entityId,string $entityPublicId,string $description,array $metadata,string $createdAt):void{$this->assertSafe($metadata);$this->audits->insert(['public_id'=>$this->publicIds->generate(),'user_id'=>null,'employee_id'=>null,'event_type'=>$eventType,'entity_type'=>$entityType,'entity_id'=>$entityId,'entity_public_id'=>$entityPublicId,'description'=>$description,'metadata'=>$metadata,'created_at'=>$createdAt]);}
+    public function recordEmployee(string $eventType,int $actorUserId,int $actorEmployeeId,int $targetEmployeeId,string $targetEmployeePublicId,string $description,array $metadata,string $createdAt):void{$this->assertSafe($metadata);$this->audits->insert(['public_id'=>$this->publicIds->generate(),'user_id'=>$actorUserId,'employee_id'=>$actorEmployeeId,'event_type'=>$eventType,'entity_type'=>'employee','entity_id'=>$targetEmployeeId,'entity_public_id'=>$targetEmployeePublicId,'description'=>$description,'metadata'=>$metadata,'created_at'=>$createdAt]);}
     /** @param array<string, mixed> $metadata */
     private function assertSafe(array $metadata): void
     {

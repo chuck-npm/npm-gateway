@@ -118,3 +118,5 @@ The Add Employee form collects required Date of Birth using a date input without
 # Notifications
 
 Notifications is a top-level authenticated destination between Dashboard and Corporate. Its navigation pill and dashboard card use the same centralized outstanding-count definition. List and detail views work without JavaScript; acknowledgment uses POST and CSRF with the exact label “I Have Read This Notice.”
+
+The authenticated user dropdown links to Emergency Contact Information immediately before Sign Out. `GET|POST /my/emergency-contact` is a personal self-service route with no Corporate category requirement, no sidebar, and private/no-store responses. Cancel returns to Dashboard without submitting.

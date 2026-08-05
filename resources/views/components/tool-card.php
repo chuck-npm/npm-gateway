@@ -17,6 +17,6 @@ $label=$toolCard->accessibilityLabel??($toolCard->enabled?'Open '.$toolCard->tit
  </div>
  <div class="gateway-tool-card__footer">
   <span><?= $escape($toolCard->footerLabel) ?></span>
-  <?php if (!$toolCard->enabled && $toolCard->badgeLabel !== null): ?><span class="gateway-tool-status"><?= $escape($toolCard->badgeLabel) ?></span><?php endif; ?>
+  <?php if ($toolCard->badgeLabel !== null): ?><span class="gateway-tool-status"><?= $escape($toolCard->badgeLabel) ?></span><?php endif; ?>
  </div>
 <?php if ($toolCard->enabled): ?></a><?php else: ?></article><?php endif; ?>

@@ -31,11 +31,11 @@ final class UniversalToolsFrameworkTest extends TestCase
     public function testProviderReturnsApprovedDeterministicCatalogWithoutDestinations():void
     {
         $provider=new UniversalToolProvider();$first=$provider->tools();$second=$provider->tools();
-        self::assertCount(12,$first);self::assertEquals($first,$second);
+        self::assertCount(8,$first);self::assertEquals($first,$second);
         $keys=array_map(fn(ToolCard $card)=>$card->key,$first);
-        self::assertCount(12,array_unique($keys));self::assertSame(['employee-directory','property-information','company-documents','notifications','credit-card-purchases','large-file-transfers','order-supplies','time-off-requests','policies-procedures','training-library','support-requests','help-desk'],$keys);
-        foreach($first as $index=>$card){if($index===0){self::assertTrue($card->enabled);self::assertSame('/employees',$card->route);self::assertSame('employees.index',$card->routeName);self::assertSame('Open directory',$card->footerLabel);}elseif($index===1){self::assertTrue($card->enabled);self::assertSame('/properties',$card->route);self::assertSame('properties.index',$card->routeName);self::assertSame('Open properties',$card->footerLabel);}elseif($index===3){self::assertTrue($card->enabled);self::assertSame('/notifications',$card->route);self::assertSame('notifications.index',$card->routeName);}else{self::assertFalse($card->enabled);self::assertNull($card->route);self::assertNull($card->routeName);}self::assertNotSame('',$card->title);self::assertNotSame('',$card->description);self::assertNotSame('',$card->categoryLabel);self::assertSame(($index+1)*10,$card->sortOrder);}
-        self::assertCount(3,array_filter($first,fn(ToolCard $card)=>$card->enabled));
+        self::assertCount(8,array_unique($keys));self::assertSame(['employee-directory','property-information','community-actions','notifications','credit-card-purchases','large-file-transfers','company-documents','order-supplies'],$keys);
+        foreach($first as $index=>$card){if($index===0){self::assertTrue($card->enabled);self::assertSame('/employees',$card->route);self::assertSame('employees.index',$card->routeName);self::assertSame('Open directory',$card->footerLabel);}elseif($index===1){self::assertTrue($card->enabled);self::assertSame('/properties',$card->route);self::assertSame('properties.index',$card->routeName);self::assertSame('Open properties',$card->footerLabel);}elseif($index===2){self::assertTrue($card->enabled);self::assertSame('/community-actions',$card->route);self::assertSame('community-actions.index',$card->routeName);self::assertSame('Open Community Actions',$card->footerLabel);}elseif($index===3){self::assertTrue($card->enabled);self::assertSame('/notifications',$card->route);self::assertSame('notifications.index',$card->routeName);}else{self::assertFalse($card->enabled);self::assertNull($card->route);self::assertNull($card->routeName);self::assertSame('Planned',$card->badgeLabel);}self::assertNotSame('',$card->title);self::assertNotSame('',$card->description);self::assertNotSame('',$card->categoryLabel);self::assertSame(($index+1)*10,$card->sortOrder);}
+        self::assertCount(4,array_filter($first,fn(ToolCard $card)=>$card->enabled));
         self::assertCount(0,(new ReflectionClass($provider))->getConstructor()?->getParameters()??[]);
     }
     public function testHomeUsesAuthenticatedEmployeeContextAndTruthfulSummary():void
@@ -43,7 +43,7 @@ final class UniversalToolsFrameworkTest extends TestCase
         $store=new class implements DashboardSummaryStoreInterface{public function counts():array{return ['property_count'=>0,'employee_count'=>1,'user_count'=>1,'active_user_count'=>1,'active_assignment_count'=>0];}};
         $user=new AuthenticatedUser(1,2,'user-public','employee-public','admin','A <User>','Sysadmin','corporate');
         $home=(new DashboardHomeService(new DashboardSummaryService($store),new UniversalToolProvider(),new CorporateToolsProvider(),new CorporateAccessService([])))->forRequest(new AuthenticatedRequestContext($user,'TEST-token'));
-        self::assertSame('A <User>',$home->welcomeName);self::assertSame('Corporate',$home->employeeClassLabel);self::assertSame('Sysadmin',$home->jobTitle);self::assertCount(12,$home->universalTools);self::assertTrue($home->setupSummary->initialSetup);self::assertTrue((new ReflectionClass($home))->isReadOnly());
+        self::assertSame('A <User>',$home->welcomeName);self::assertSame('Corporate',$home->employeeClassLabel);self::assertSame('Sysadmin',$home->jobTitle);self::assertCount(8,$home->universalTools);self::assertTrue($home->setupSummary->initialSetup);self::assertTrue((new ReflectionClass($home))->isReadOnly());
         foreach(['username','email','phone','password','session'] as $field)self::assertFalse(property_exists($home,$field));
     }
     public function testArchitectureKeepsDefinitionsOutOfControllerAndViews():void

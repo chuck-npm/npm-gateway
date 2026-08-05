@@ -25,4 +25,5 @@ final class AuditRepository implements AuditStoreInterface
         $statement->execute();
         $statement->close();
     }
+    public function existsEventForEntitySince(string $eventType,string $entityPublicId,string $since):bool{$s=$this->connection->prepare('SELECT 1 FROM audit_logs USE INDEX (idx_audit_logs_entity_public) WHERE entity_public_id=? AND created_at>=? AND event_type=? LIMIT 1');$s->bind_param('sss',$entityPublicId,$since,$eventType);$s->execute();$exists=$s->get_result()->num_rows>0;$s->close();return $exists;}
 }

@@ -1,22 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-
-globalThis.document = { readyState: 'loading', addEventListener() {}, querySelector() { return null; }, querySelectorAll() { return []; } };
-globalThis.window = { addEventListener() {} };
-const { initializeProcessingOverlays } = await import('../../public/assets/js/processing-overlay.js');
-
-class Control { constructor(disabled=false){this.disabled=disabled;this.dataset={};} }
-class Message { constructor(){this.textContent='';} }
-class Overlay { constructor(){this.hidden=true;this.attributes={};this.message=new Message();} setAttribute(k,v){this.attributes[k]=v;} querySelector(){return this.message;} }
-class Form {
-  constructor(message='',valid=true){this.dataset={processingMessage:message};this.valid=valid;this.attributes={};this.listeners=[];this.submit=new Control();this.input={disabled:false};}
-  addEventListener(type,fn){if(type==='submit')this.listeners.push(fn);} querySelectorAll(){return [this.submit];} checkValidity(){return this.valid;} setAttribute(k,v){this.attributes[k]=v;} removeAttribute(k){delete this.attributes[k];}
-  fire(prevented=false){const event={defaultPrevented:prevented,preventDefault(){this.defaultPrevented=true;}};this.listeners.forEach(fn=>fn(event));return event;}
+globalThis.document={readyState:'loading',addEventListener(){},querySelector(){return null;},querySelectorAll(){return[];}};
+globalThis.window={addEventListener(){}};
+const {initializeProcessingOverlays}=await import('../../public/assets/js/processing-overlay.js');
+class Control{
+ constructor(disabled=false,name='',value='',type='submit'){this.disabled=disabled;this.dataset={};this.attrs={name,value,type};this.form=null;}
+ getAttribute(name){return this.attrs[name]??null;}setAttribute(name,value){this.attrs[name]=value;}removeAttribute(name){delete this.attrs[name];}
 }
-class Root { constructor(forms=[],overlay=null){this.forms=forms;this.overlay=overlay;} querySelector(s){return s==='[data-processing-overlay]'?this.overlay:null;} querySelectorAll(s){return s==='[data-processing-form]'?this.forms:[];} }
+class Message{constructor(){this.textContent='';}}
+class Overlay{constructor(){this.hidden=true;this.attributes={};this.message=new Message();}setAttribute(k,v){this.attributes[k]=v;}querySelector(){return this.message;}}
+class Form{
+ constructor(message='',valid=true){this.dataset={processingMessage:message};this.valid=valid;this.attributes={};this.listeners=[];this.submit=new Control();this.input=new Control(false,'reviewer_comments','Test comments','textarea');this.controls=[];this.setControls([this.submit]);}
+ setControls(controls){this.controls=controls;for(const control of controls)control.form=this;}
+ addEventListener(type,fn){if(type==='submit')this.listeners.push(fn);}querySelectorAll(){return this.controls;}checkValidity(){return this.valid;}setAttribute(k,v){this.attributes[k]=v;}removeAttribute(k){delete this.attributes[k];}
+ fire(prevented=false,submitter=this.submit){const event={defaultPrevented:prevented,submitter,preventDefault(){this.defaultPrevented=true;}};this.listeners.forEach(fn=>fn(event));return event;}
+ serialize(submitter){const entries=[];if(!this.input.disabled&&this.input.getAttribute('name'))entries.push([this.input.getAttribute('name'),this.input.getAttribute('value')]);if(submitter?.form===this&&!submitter.disabled&&submitter.getAttribute('name'))entries.push([submitter.getAttribute('name'),submitter.getAttribute('value')]);return new URLSearchParams(entries).toString();}
+}
+class Root{constructor(forms=[],overlay=null){this.forms=forms;this.overlay=overlay;}querySelector(s){return s==='[data-processing-overlay]'?this.overlay:null;}querySelectorAll(s){return s==='[data-processing-form]'?this.forms:[];}}
 const tick=()=>new Promise(resolve=>queueMicrotask(resolve));
-
-test('valid submission activates, disables only submit controls, and blocks a second submit',async()=>{const form=new Form('Working…');const overlay=new Overlay();initializeProcessingOverlays(new Root([form],overlay));form.fire();await tick();assert.equal(overlay.hidden,false);assert.equal(overlay.message.textContent,'Working…');assert.equal(form.submit.disabled,true);assert.equal(form.input.disabled,false);assert.equal(form.attributes['aria-busy'],'true');assert.equal(form.fire().defaultPrevented,true);});
+test('valid submission activates, preserves clicked submitter, disables alternatives, and blocks a second submit',async()=>{const form=new Form('Working…');const alternative=new Control();form.setControls([form.submit,alternative]);const overlay=new Overlay();initializeProcessingOverlays(new Root([form],overlay));form.fire(false,form.submit);assert.equal(form.submit.disabled,false);assert.equal(form.submit.getAttribute('aria-disabled'),'true');assert.equal(alternative.disabled,true);assert.equal(form.fire(false,alternative).defaultPrevented,true);await tick();assert.equal(overlay.hidden,false);assert.equal(overlay.message.textContent,'Working…');assert.equal(form.input.disabled,false);assert.equal(form.attributes['aria-busy'],'true');});
 test('prevented and invalid submissions do not activate',async()=>{for(const form of [new Form('',false),new Form('',true)]){const overlay=new Overlay();initializeProcessingOverlays(new Root([form],overlay));form.fire(form.valid);await tick();assert.equal(overlay.hidden,true);assert.equal(form.submit.disabled,false);}});
-test('reset restores controls and overlay, and fallback message is safe',async()=>{const form=new Form();const overlay=new Overlay();const controller=initializeProcessingOverlays(new Root([form],overlay));form.fire();await tick();assert.equal(overlay.message.textContent,'Processing your request…');controller.reset();assert.equal(overlay.hidden,true);assert.equal(form.submit.disabled,false);assert.equal(form.attributes['aria-busy'],undefined);});
-test('forms initialize independently and reinitialization and missing overlay are safe',async()=>{const one=new Form('One');const two=new Form('Two');const root=new Root([one,two]);initializeProcessingOverlays(root);initializeProcessingOverlays(root);assert.equal(one.listeners.length,1);assert.equal(two.listeners.length,1);one.fire();await tick();assert.equal(one.submit.disabled,true);assert.equal(two.submit.disabled,false);assert.doesNotThrow(()=>initializeProcessingOverlays(new Root()));});
+test('reset restores controls and overlay',async()=>{const form=new Form();const other=new Control();form.setControls([form.submit,other]);const overlay=new Overlay();const controller=initializeProcessingOverlays(new Root([form],overlay));form.fire(false,form.submit);await tick();controller.reset();assert.equal(overlay.hidden,true);assert.equal(form.submit.disabled,false);assert.equal(form.submit.getAttribute('aria-disabled'),null);assert.equal(other.disabled,false);assert.equal(form.attributes['aria-busy'],undefined);});
+test('forms initialize independently and only one handler is registered',()=>{const one=new Form();const two=new Form();const root=new Root([one,two]);initializeProcessingOverlays(root);initializeProcessingOverlays(root);assert.equal(one.listeners.length,1);assert.equal(two.listeners.length,1);assert.doesNotThrow(()=>initializeProcessingOverlays(new Root()));});
+test('native browser contract serializes notes and only the clicked named submitter',()=>{for(const decision of ['approved','denied']){const form=new Form('Saving decision…');const clicked=new Control(false,'decision',decision);const other=new Control(false,'decision',decision==='approved'?'denied':'approved');form.setControls([clicked,other]);initializeProcessingOverlays(new Root([form],new Overlay()));form.fire(false,clicked);assert.equal(clicked.disabled,false);assert.equal(other.disabled,true);assert.equal(form.serialize(clicked),`reviewer_comments=Test+comments&decision=${decision}`);assert.equal(form.serialize(other),'reviewer_comments=Test+comments');assert.equal(form.fire(false,other).defaultPrevented,true);}});
+test('ordinary unnamed and foreign submitters do not create preservation fields',()=>{const form=new Form();const unnamed=form.submit;initializeProcessingOverlays(new Root([form],new Overlay()));form.fire(false,unnamed);assert.equal(unnamed.disabled,false);assert.equal(form.serialize(unnamed),'reviewer_comments=Test+comments');const foreign=new Control(false,'decision','approved');const otherForm=new Form();foreign.form=otherForm;const guarded=new Form();initializeProcessingOverlays(new Root([guarded],new Overlay()));guarded.fire(false,foreign);assert.equal(foreign.getAttribute('aria-disabled'),null);assert.equal(guarded.querySelectorAll().some(control=>control.getAttribute('type')==='hidden'),false);});

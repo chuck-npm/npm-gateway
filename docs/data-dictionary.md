@@ -47,6 +47,8 @@ Unique indexes: public ID, employee number, nullable business email. Other index
 
 Assistant Manager is represented by `employee_class = 'manager'` and an active primary `assignment_type = 'assistant_manager'`; no assistant-manager employee class exists. Corporate employees have no assignment row. Their Corporate operational context is centrally derived from `employee_class = 'corporate'` and the protected Corporate property identity.
 
+For new Gateway notifications, `employee_class` is an authoritative allowlist gate: only `corporate` and `manager` may qualify. `maintenance` and unknown future classes are denied regardless of user, email, assignment, or Category Access data. Historical notification rows are retained when status or classification changes.
+
 New-employee credential notification is synchronous after the employee transaction commits. Recipient configuration is external, the sender must resolve to `no-reply@npmpropertiesinc.com`, and transport requires authenticated TLS. Notification content is never stored in business or audit tables; only a safe sent/failed status is audited.
 
 The application generates and never reuses employee numbers. Allocation
@@ -212,12 +214,14 @@ creates `authentication.login_succeeded`; lockout creates
 password hashes, raw tokens, or token hashes.
 # `user_category_access`
 
-Durable per-user Corporate category authorization introduced by Migration 007. `user_id` identifies the member; `category` is one of `finance`, `human-resources`, `marketing`, `admin`, or `credit-cards`. The pair is unique. `public_id` is the external identifier, while `granted_by_user_id`/`granted_at` and nullable update fields retain provenance. All user foreign keys use `RESTRICT`; application services supply public IDs and timestamps. Membership remains stored for inactive users, but is ineffective while the linked user is inactive.
+Durable per-user Corporate category authorization introduced by Migration 007. `user_id` identifies the member; after Migration 016, `category` is one of `operations`, `human-resources`, `company-notices`, `application-reviews`, `finance`, `marketing`, `admin`, or `credit-cards`. The pair is unique. `public_id` is the external identifier, while `granted_by_user_id`/`granted_at` and nullable update fields retain provenance. All user foreign keys use `RESTRICT`; application services supply public IDs and timestamps. Membership remains stored for inactive users, but is ineffective while the linked user is inactive.
 # Notifications (Migration 008)
 
 `notifications` stores immutable, non-sensitive communication snapshots and source-event identity. `notification_recipients` materializes one assignment per eligible user and stores first-view, acknowledgment, snapshotted business-email, and sanitized delivery status. Both tables use ULID public IDs and restrictive foreign keys; historical rows prevent rollback.
 
-Migration 009 extends notification and Company Notice authorization allowlists. Migration 012 adds the first-class `operations` category. The presentation order is `operations`, `human-resources`, `company-notices`, `finance`, `marketing`, `admin`, `credit-cards`; initial Operations backfill members are Chuck and Tim only.
+`employee_emergency_contacts` stores exactly one current emergency contact per employee. Its unique `employee_id` has a restrictive foreign key to `employees`; `public_id` is independently unique. Approved contact fields are first name, last name, relationship, normalized primary phone, and nullable normalized alternate phone. ECI is restricted personal information and is not joined into general employee views or notification payloads.
+
+Migration 009 extends notification and Company Notice authorization allowlists. Migration 012 adds `operations`; Migration 016 adds independent `application-reviews` access without changing any other schema object. The presentation order is `operations`, `human-resources`, `company-notices`, `application-reviews`, `finance`, `marketing`, `admin`, `credit-cards`. Migration 016 does not backfill memberships.
 
 # Gateway Storage (Migration 010)
 
@@ -228,3 +232,11 @@ Migration 009 extends notification and Company Notice authorization allowlists. 
 Migration 011 permits `deleted_by_user_id` to remain null only for an approved automated cleanup transition. A non-null value identifies an authenticated interactive deletion. Every deleted object still requires `deleted_at`, cannot retain a temporary review owner, and remains auditable. System cleanup records an `audit_logs` event with its already-supported null actor; Gateway does not fabricate a system user.
 
 Company Notices allow at most 10 combined attachments and embedded images, 104857600 bytes (100 MiB) per object, and 1048576000 bytes (1,000 MiB) total. These binary-megabyte limits are application rules and are intentionally absent from the generic storage schema.
+
+`user_property_access` stores current explicit authorization between `users` and `properties`. A unique `(user_id, property_id)` pair prevents duplicate grants; restrictive foreign keys preserve user, property, and actor integrity. The table does not duplicate property codes, names, employee class, email, or assignment type. Grant/revoke history is retained in sanitized `audit_logs` events, matching the established current-state Category Access pattern.
+
+# Application Reviews (Migration 015)
+
+`application_reviews` stores one property-scoped prospect review shared by the manager and centralized Operations views. `property_id` and `submitted_by_user_id` are assigned from trusted server context. Status is exactly `pending_review`, `approved`, or `denied`; reviewer identity and time remain null until an irreversible decision. All property and user foreign keys are restrictive.
+
+`application_review_history` is append-only business lifecycle history. It records `submitted`, `approved`, and `denied` events, state transition, acting user, plain-text comments, and company timestamp. Repository APIs provide insert/read only. Public ULIDs identify records externally; numeric IDs never enter routes. Rollback refuses while either table contains records.

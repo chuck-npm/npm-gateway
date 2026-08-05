@@ -8,6 +8,9 @@
     --gateway-text: #172033;
     --gateway-muted: #667085;
     --gateway-border: #d8dee9;
+    --gateway-control-border-strong: #53657a;
+    --gateway-control-border-disabled: #98a2b3;
+    --gateway-control-disabled-bg: #f3f4f6;
     --gateway-radius: 1rem;
     --gateway-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     --gateway-transition: 0.20s ease-in-out;
@@ -128,6 +131,19 @@ body {
 .gateway-form-grid { --bs-gutter-x:1.25rem;--bs-gutter-y:1.25rem; }
 .gateway-form-grid .form-text { margin-top:.4rem; }
 .gateway-form-actions { display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--gateway-border); }
+.gateway-form-actions--primary-first { justify-content:flex-start;flex-wrap:wrap; }
+.gateway-prospect-information .gateway-prospect-field + .gateway-prospect-field { margin-top:-.5rem; }
+.gateway-form-subsection-title { margin:0 0 .75rem;color:var(--gateway-navy);font-size:1rem;font-weight:750;line-height:1.4; }
+.gateway-company-policy__notice { width:75%;max-width:100%; }
+.gateway-required-confirmation-title { margin:1.25rem 0 .75rem;color:var(--gateway-navy);font-size:.9rem;font-weight:750; }
+.gateway-character-counter { text-align:right;font-variant-numeric:tabular-nums; }
+.gateway-form-check--top-aligned { display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:.75rem;align-items:start;padding-left:0; }
+.gateway-form-check--top-aligned .form-check-input { float:none;margin:.2rem 0 0; }
+.gateway-form-check--top-aligned .form-check-label,.gateway-form-check--top-aligned .invalid-feedback { grid-column:2; }
+.form-check-input[type="checkbox"]:not(:checked):not(:disabled):not(.is-invalid) { background-color:var(--gateway-surface);border-color:var(--gateway-control-border-strong);border-width:1px;opacity:1; }
+.form-check-input[type="checkbox"]:checked:not(.is-invalid) { background-color:var(--bs-primary);border-color:var(--bs-primary); }
+.form-check-input[type="checkbox"]:focus-visible { outline:.15rem solid var(--gateway-gold);outline-offset:.12rem;box-shadow:0 0 0 .2rem rgba(var(--bs-primary-rgb),.25); }
+.form-check-input[type="checkbox"]:disabled { background-color:var(--gateway-control-disabled-bg);border-color:var(--gateway-control-border-disabled);opacity:.65; }
 
 /* Foundation page */
 .gateway-panel {
@@ -506,7 +522,37 @@ body {
 }
 .gateway-status--success { color: #0f5132; background: #d1e7dd; }
 .gateway-status--warning { color: #664d03; background: #fff3cd; }
+.gateway-status--danger { color: #842029; background: #f8d7da; }
 .gateway-status--neutral { color: var(--gateway-text); background: var(--gateway-background); }
+.gateway-eci-summary { margin-bottom:2.5rem; }
+.gateway-eci-summary .gateway-status { padding:.45rem .85rem; }
+.gateway-eci-summary .gateway-status--neutral { font-weight:750; }
+.gateway-review-summary { margin-bottom:2.5rem; }
+.gateway-review-summary .gateway-status { min-height:2rem;padding:.45rem .85rem;align-items:center;font-size:.8rem;font-weight:750; }
+.gateway-page-header__status { margin:.7rem 0 .55rem; }
+.gateway-page-header__status .gateway-status { padding:.5rem .9rem;font-size:.9rem; }
+.gateway-review-decision-actions { display:flex;flex-wrap:wrap;gap:.75rem;align-items:center; }
+.gateway-review-decision-actions__cancel { margin-left:auto; }
+.gateway-review-record { overflow:hidden; }
+.gateway-review-record__fields { margin:0; }
+.gateway-review-record__label,.gateway-review-record__value { padding-top:.7rem;padding-bottom:.7rem;border-bottom:1px solid var(--gateway-border); }
+.gateway-review-record__label { color:#53657a;font-size:.8rem;font-weight:750;letter-spacing:.02em; }
+.gateway-review-record__value { margin-bottom:0;overflow-wrap:anywhere; }
+.gateway-review-record__fields > :nth-last-child(-n+2) { border-bottom:0; }
+.gateway-review-timeline { margin-top:1.5rem;padding:1.25rem;background:var(--gateway-surface);border:1px solid var(--gateway-border);border-radius:.75rem; }
+.gateway-review-timeline h2 { margin:0 0 1rem;color:var(--gateway-navy);font-size:1.2rem; }
+.gateway-review-timeline__events { display:grid;gap:0;margin:0;padding:0;list-style:none; }
+.gateway-review-timeline__event { position:relative;padding:0 0 1.75rem 1.5rem;border-left:2px solid var(--gateway-border); }
+.gateway-review-timeline__event:last-child { padding-bottom:0; }
+.gateway-review-timeline__event::before { position:absolute;top:.25rem;left:-.4rem;width:.7rem;height:.7rem;content:"";background:var(--gateway-blue);border:2px solid var(--gateway-surface);border-radius:50%;box-shadow:0 0 0 1px var(--gateway-blue); }
+.gateway-review-timeline__label { display:block;color:var(--gateway-navy);font-size:1rem; }
+.gateway-review-timeline__meta { display:flex;flex-wrap:wrap;gap:.25rem .75rem;margin-top:.2rem;color:var(--gateway-muted);font-size:.85rem; }
+.gateway-review-timeline__comments { margin:.75rem 0 0;white-space:normal;overflow-wrap:anywhere; }
+@media (max-width:575.98px) { .gateway-review-record__label { padding-bottom:.15rem;border-bottom:0; }.gateway-review-record__value { padding-top:0; }.gateway-review-timeline { padding:1rem; }.gateway-review-timeline__event { padding-left:1.25rem; }.gateway-review-decision-actions__cancel { width:100%;margin-left:0; } }
+.gateway-property-access-matrix .gateway-property-access-matrix__employee { position:sticky;left:0;z-index:2;width:16rem;min-width:14rem;max-width:18rem;white-space:normal;background:var(--gateway-surface);box-shadow:2px 0 4px rgba(7,27,52,.08); }
+.gateway-property-access-matrix thead .gateway-property-access-matrix__employee { z-index:3;background:#f7f9fb; }
+.gateway-property-access-matrix tbody .gateway-property-access-matrix__employee { color:inherit;font-size:inherit;font-weight:inherit;letter-spacing:normal;text-transform:none; }
+@media (max-width:767.98px) { .gateway-property-access-matrix .gateway-property-access-matrix__employee { position:static;left:auto;z-index:auto;width:auto;min-width:0;max-width:none;padding:.55rem 0;text-align:left;border:0;border-bottom:1px solid var(--gateway-border);box-shadow:none; } }
 
 /* Pagination */
 .gateway-pagination__list {
@@ -617,6 +663,8 @@ body {
     .gateway-directory-toolbar__actions { grid-column:auto;flex-wrap:wrap; }
     .gateway-directory-result-count { align-items:flex-start;flex-direction:column; }
     .gateway-form-actions { align-items:stretch;flex-direction:column-reverse; }
+    .gateway-form-actions--primary-first { flex-direction:column; }
+    .gateway-company-policy__notice { width:100%; }
     .gateway-directory-table-wrap { overflow:visible;border:0;background:transparent; }
     .gateway-directory-table { display:block;min-width:0;background:transparent; }
     .gateway-directory-table thead { position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0; }
