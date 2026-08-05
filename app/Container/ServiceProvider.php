@@ -133,8 +133,12 @@ use NpmGateway\Services\RichTextSanitizer;
 use NpmGateway\Storage\WasabiStorageAdapter;
 use NpmGateway\Services\PublishedStorageService;
 use NpmGateway\Repositories\ApplicationReviewRepository;
+use NpmGateway\Repositories\CreditCardPurchaseRepository;
 use NpmGateway\Services\ApplicationReviewValidator;
 use NpmGateway\Services\ApplicationReviewService;
+use NpmGateway\Services\CreditCardPurchaseService;
+use NpmGateway\Services\CreditCardPurchaseValidator;
+use NpmGateway\Services\CreditCardReceiptTestCleanupService;
 use NpmGateway\Services\ApplicationReviewQueryService;
 use NpmGateway\Notifications\ApplicationReviewEmailSender;
 final class ServiceProvider
@@ -205,6 +209,7 @@ final class ServiceProvider
         $container->set(PropertyRepository::class,static fn(Container $c):PropertyRepository=>new PropertyRepository($c->get(mysqli::class)));
         $container->set(PropertyAccessRepository::class,static fn(Container $c):PropertyAccessRepository=>new PropertyAccessRepository($c->get(mysqli::class)));
         $container->set(ApplicationReviewRepository::class,static fn(Container $c):ApplicationReviewRepository=>new ApplicationReviewRepository($c->get(mysqli::class)));
+        $container->set(CreditCardPurchaseRepository::class,static fn(Container $c):CreditCardPurchaseRepository=>new CreditCardPurchaseRepository($c->get(mysqli::class)));
         $container->set(PropertyAccessStoreInterface::class,static fn(Container $c):PropertyAccessStoreInterface=>$c->get(PropertyAccessRepository::class));
         $container->set(PropertyStoreInterface::class,static fn(Container $c):PropertyStoreInterface=>$c->get(PropertyRepository::class));
         $container->set(PropertyDirectoryStoreInterface::class,static fn(Container $c):PropertyDirectoryStoreInterface=>$c->get(PropertyRepository::class));
@@ -262,6 +267,9 @@ final class ServiceProvider
         $container->set(ApplicationReviewQueryService::class,static fn(Container $c):ApplicationReviewQueryService=>new ApplicationReviewQueryService($c->get(ApplicationReviewRepository::class)));
         $container->set(ApplicationReviewEmailSender::class,static fn(Container $c):ApplicationReviewEmailSender=>new ApplicationReviewEmailSender((array)$c->get('config.application-reviews'),null,$c->get(GatewayEmailRenderer::class)));
         $container->set(ApplicationReviewService::class,static fn(Container $c):ApplicationReviewService=>new ApplicationReviewService($c->get(ApplicationReviewRepository::class),$c->get(ApplicationReviewValidator::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class),$c->get(ApplicationReviewEmailSender::class),$c->get(PropertyAccessService::class)));
+        $container->set(CreditCardPurchaseValidator::class,static fn():CreditCardPurchaseValidator=>new CreditCardPurchaseValidator());
+        $container->set(CreditCardReceiptTestCleanupService::class,static fn(Container $c):CreditCardReceiptTestCleanupService=>new CreditCardReceiptTestCleanupService($c->get(StorageConfiguration::class),$c->get(StorageAdapterInterface::class),$c->get(StorageObjectRepository::class)));
+        $container->set(CreditCardPurchaseService::class,static fn(Container $c):CreditCardPurchaseService=>new CreditCardPurchaseService($c->get(CreditCardPurchaseRepository::class),$c->get(CreditCardPurchaseValidator::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class),$c->get(PropertyAccessService::class),$c->get(GatewayStorageService::class),$c->get(StorageObjectStoreInterface::class)));
         $container->set(ProtectedPrincipalService::class,static fn(Container $c):ProtectedPrincipalService=>new ProtectedPrincipalService($c->get(ProtectedPrincipalConfig::class),$c->get(CategoryAccessStoreInterface::class),$c->get(AuditService::class),$c->get(ClockInterface::class)));
         $container->set(CategoryAccessAdministrationService::class,static fn(Container $c):CategoryAccessAdministrationService=>new CategoryAccessAdministrationService($c->get(CategoryAccessStoreInterface::class),$c->get(InitializationTransactionInterface::class),$c->get(AuditService::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),(array)$c->get('config.corporate-access')['categories'],$c->get(ProtectedPrincipalService::class)));
         $container->set(CategoryAccessPayloadParser::class,static fn(Container $c):CategoryAccessPayloadParser=>new CategoryAccessPayloadParser((array)$c->get('config.corporate-access')['categories']));

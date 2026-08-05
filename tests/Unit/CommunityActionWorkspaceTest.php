@@ -17,7 +17,7 @@ final class CommunityActionWorkspaceTest extends TestCase
         self::assertSame(self::LABELS, array_column($actions, 'label'));
         self::assertSame(self::SEGMENTS, array_column($actions, 'route_segment'));
         self::assertSame(range(1, 10), array_column($actions, 'order'));
-        self::assertSame([true,false,false,false,false,false,false,false,false,false], array_column($actions, 'implemented'));
+        self::assertSame([true,true,false,false,false,false,false,false,false,false], array_column($actions, 'implemented'));
         foreach ($actions as $action) self::assertSame($action, $provider->findByRouteSegment($action['route_segment']));
         self::assertNull($provider->findByRouteSegment('unknown-action'));
     }

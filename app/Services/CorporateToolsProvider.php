@@ -15,7 +15,7 @@ final class CorporateToolsProvider implements CorporateToolsProviderInterface
             ['human-resources','Human Resources','Manage employees, time off, timecards, payroll documents, and personnel records.','Human Resources','/human-resources','hr.index'],
             ['company-notices','Company Notices','Create and review official company communications.','Communications','/company-notices','company-notices.index'],
             ['application-reviews','Application Reviews','Review prospect submissions from all communities.','Corporate','/corporate/application-reviews','corporate.application-reviews.index'],
-            ['finance','Finance','Access credit card purchases, reconciliations, invoices, and financial reporting.','Finance',null,null],
+            ['finance','Finance','Access credit card purchases, reconciliations, invoices, and financial reporting.','Finance','/corporate/finance','corporate.finance.index'],
             ['marketing','Marketing','Manage property websites, advertising, leads, announcements, and marketing resources.','Marketing','/corporate/marketing','corporate.marketing.index'],
             ['admin','Admin','Manage properties, Gateway users, assignments, and system configuration.','Administration','/admin','admin.index'],
             ['credit-cards','Credit Cards','Manage employee credit-card assignments and records.','Credit Cards',null,null],

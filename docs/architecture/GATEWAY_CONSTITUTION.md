@@ -149,3 +149,6 @@ Global Notifications are assigned independently of Corporate category access. Ac
 Gateway-generated notifications are delivered only to active eligible employees classified as `corporate` or `manager`. `maintenance` employees are never notification recipients and are excluded before recipient materialization, email delivery, acknowledgment tracking, and reporting. Category Access, an email address, a user record, or a property assignment cannot override this platform rule. Unknown future classifications are denied by default.
 
 Emergency Contact Information is employee-owned restricted profile data. Self-service identity comes only from the authenticated session, one current contact is permitted per employee, and no administrator or category grant may redirect the self-service route to another employee. Contact values are excluded from URLs, directories, notifications, email, logs, and audit metadata. Maintenance access requires a future authorized HR workflow.
+# Financial record invariants
+
+Financial records are never silently deleted. Property and submitter identity come from trusted server context, not posted identity fields. Financial corrections require append-only history. Receipt absence does not prevent recording a transaction, but it must be explicitly declared and documented.
