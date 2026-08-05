@@ -18,6 +18,7 @@ use NpmGateway\Console\StorageDiagnosticCommand;
 use NpmGateway\Services\CategoryAccessBackfillService;
 use NpmGateway\Services\OperationsAccessBackfillService;
 use NpmGateway\Console\OperationsAccessBackfillCommand;
+use NpmGateway\Console\ProtectedPrincipalCheckCommand;
 
 $projectRoot = dirname(__DIR__);
 
@@ -42,6 +43,8 @@ $help = implode(PHP_EOL, [
     '  storage:check',
     '  storage:test',
     '  storage:cleanup-temporary [hours]',
+    '  protected-principal:check',
+    '  protected-principal:repair --confirm',
 ]) . PHP_EOL;
 
 if ($command === '' || in_array($command, ['help', '--help', '-h'], true)) {
@@ -110,6 +113,12 @@ if($command==='operations-access:backfill'){
     $profile=DatabaseProfiles::load('application',$application['root']);
     if(!in_array($profile['app_env'],['local','testing'],true)||!in_array($profile['host'],['127.0.0.1','localhost','::1'],true)||($profile['database']!=='npmgateway'&&!str_ends_with($profile['database'],'_test'))){fwrite(STDERR,"Operations access backfill is restricted to approved local databases.\n");exit(2);}
     $container=ServiceProvider::build($application);try{$result=(new OperationsAccessBackfillCommand($container->get(OperationsAccessBackfillService::class)))->run(array_slice($arguments,1));fwrite(STDOUT,"Operations access backfill complete: {$result['created']} created, {$result['already_present']} existing, {$result['conflicts']} conflicts, {$result['total']} final Operations memberships.\n");exit(0);}catch(Throwable $e){fwrite(STDERR,str_replace(["\r","\n"],' ',$e->getMessage())."\n");exit(1);}finally{$container->get(mysqli::class)->close();}
+}
+if($command==='protected-principal:check'){
+    $container=ServiceProvider::build($application);try{$result=(new ProtectedPrincipalCheckCommand($container->get(\NpmGateway\Services\ProtectedPrincipalService::class)))->run(array_slice($arguments,1));fwrite(STDOUT,$result['stdout']);fwrite(STDERR,$result['stderr']);exit($result['exit_code']);}finally{$container->get(mysqli::class)->close();}
+}
+if($command==='protected-principal:repair'){
+    if(array_slice($arguments,1)!==['--confirm']){fwrite(STDERR,"Usage: protected-principal:repair --confirm\n");exit(2);}$profile=DatabaseProfiles::load('migration',$application['root']);$db=null;try{$corporate=require $projectRoot.'/config/corporate-access.php';$raw=require $projectRoot.'/config/protected-principal.php';$config=\NpmGateway\Configuration\ProtectedPrincipalConfig::fromArray($raw,(array)$corporate['categories']);$db=\NpmGateway\Database\MySqlConnectionFactory::connect($profile);$ids=new \NpmGateway\Support\PublicIdGenerator();$clock=new \NpmGateway\Support\SystemClock(new DateTimeZone((string)$application['config']['app']['timezone']));$audits=new \NpmGateway\Services\AuditService(new \NpmGateway\Repositories\AuditRepository($db),$ids);$maintenance=new \NpmGateway\Services\ProtectedPrincipalMaintenanceService($db,$config,$audits,$ids,$clock);$proposal=$maintenance->proposedRepairs();fwrite(STDOUT,"Proposed protected-principal repairs: ".($proposal['repairs']===[]?'none':implode(', ',$proposal['repairs'])).".\n");$result=$maintenance->repair();fwrite(STDOUT,$result['repairs']===[]?"Protected principal already healthy; no changes made.\n":"Protected principal baseline repaired.\n");exit(0);}catch(Throwable $e){fwrite(STDERR,str_replace(["\r","\n"],' ',$e->getMessage())."\n");exit(1);}finally{if($db instanceof mysqli)$db->close();}
 }
 
 if (!in_array($command, ['migrate', 'migrate:status', 'migrate:rollback', 'schema:verify'], true)) {

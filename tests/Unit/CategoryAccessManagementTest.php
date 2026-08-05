@@ -56,7 +56,7 @@ final class CategoryAccessManagementTest extends TestCase
 
     public function testAdminMatrixUsesOnlySafeDisplayFields():void
     {
-        $matrix=$this->administration($this->storeWithUsers())->matrix();self::assertSame(['public_id','username','status','display_name','categories'],array_keys($matrix['users'][0]));self::assertArrayNotHasKey('password_hash',$matrix['users'][0]);
+        $matrix=$this->administration($this->storeWithUsers())->matrix();self::assertSame(['public_id','username','status','display_name','categories','protected','protected_categories'],array_keys($matrix['users'][0]));self::assertArrayNotHasKey('password_hash',$matrix['users'][0]);
     }
 
     public function testRealPhpFormShapeParsesTimAdminAndAbsentCheckboxesAsFalse():void

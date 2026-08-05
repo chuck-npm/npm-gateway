@@ -15,6 +15,7 @@ use NpmGateway\Contracts\SessionTokenGeneratorInterface;
 use NpmGateway\Contracts\AuthenticationServiceInterface;
 use NpmGateway\Contracts\SessionServiceInterface;
 use NpmGateway\Configuration\AuthenticationConfig;
+use NpmGateway\Configuration\ProtectedPrincipalConfig;
 use NpmGateway\Database\DatabaseProfiles;
 use NpmGateway\Database\MySqlConnectionFactory;
 use NpmGateway\Database\MySqlInitializationTransaction;
@@ -88,6 +89,7 @@ use NpmGateway\Notifications\SmtpEmployeeNotificationSender;
 use NpmGateway\Contracts\CategoryAccessStoreInterface;
 use NpmGateway\Repositories\CategoryAccessRepository;
 use NpmGateway\Services\CategoryAccessAdministrationService;
+use NpmGateway\Services\ProtectedPrincipalService;
 use NpmGateway\Services\CategoryAccessBackfillService;
 use NpmGateway\Services\OperationsAccessBackfillService;
 use NpmGateway\Services\CategoryAccessPayloadParser;
@@ -146,6 +148,7 @@ final class ServiceProvider
         $notice = require $root . '/config/credential-notification.php';
         $hrNotice = require $root . '/config/hr-employee-notification.php';
         $corporateAccess = require $root . '/config/corporate-access.php';
+        $protectedPrincipal = require $root . '/config/protected-principal.php';
         $storage = require $root . '/config/storage.php';
         $applicationReviews = require $root . '/config/application-reviews.php';
         /** @var AuthenticationConfig $authentication */
@@ -153,6 +156,7 @@ final class ServiceProvider
         $container->instance('config.notification', $notice);
         $container->instance('config.hr-employee-notification',$hrNotice);
         $container->instance('config.corporate-access', $corporateAccess);
+        $container->instance(ProtectedPrincipalConfig::class,ProtectedPrincipalConfig::fromArray($protectedPrincipal,(array)$corporateAccess['categories']));
         $container->instance('config.storage',$storage);
         $container->instance('config.application-reviews',$applicationReviews);
         $container->instance(AuthenticationConfig::class, $authentication);
@@ -258,7 +262,8 @@ final class ServiceProvider
         $container->set(ApplicationReviewQueryService::class,static fn(Container $c):ApplicationReviewQueryService=>new ApplicationReviewQueryService($c->get(ApplicationReviewRepository::class)));
         $container->set(ApplicationReviewEmailSender::class,static fn(Container $c):ApplicationReviewEmailSender=>new ApplicationReviewEmailSender((array)$c->get('config.application-reviews'),null,$c->get(GatewayEmailRenderer::class)));
         $container->set(ApplicationReviewService::class,static fn(Container $c):ApplicationReviewService=>new ApplicationReviewService($c->get(ApplicationReviewRepository::class),$c->get(ApplicationReviewValidator::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class),$c->get(ApplicationReviewEmailSender::class),$c->get(PropertyAccessService::class)));
-        $container->set(CategoryAccessAdministrationService::class,static fn(Container $c):CategoryAccessAdministrationService=>new CategoryAccessAdministrationService($c->get(CategoryAccessStoreInterface::class),$c->get(InitializationTransactionInterface::class),$c->get(AuditService::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),(array)$c->get('config.corporate-access')['categories']));
+        $container->set(ProtectedPrincipalService::class,static fn(Container $c):ProtectedPrincipalService=>new ProtectedPrincipalService($c->get(ProtectedPrincipalConfig::class),$c->get(CategoryAccessStoreInterface::class),$c->get(AuditService::class),$c->get(ClockInterface::class)));
+        $container->set(CategoryAccessAdministrationService::class,static fn(Container $c):CategoryAccessAdministrationService=>new CategoryAccessAdministrationService($c->get(CategoryAccessStoreInterface::class),$c->get(InitializationTransactionInterface::class),$c->get(AuditService::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),(array)$c->get('config.corporate-access')['categories'],$c->get(ProtectedPrincipalService::class)));
         $container->set(CategoryAccessPayloadParser::class,static fn(Container $c):CategoryAccessPayloadParser=>new CategoryAccessPayloadParser((array)$c->get('config.corporate-access')['categories']));
         $container->set(CategoryAccessBackfillService::class,static fn(Container $c):CategoryAccessBackfillService=>new CategoryAccessBackfillService($c->get(CategoryAccessStoreInterface::class),$c->get(InitializationTransactionInterface::class),$c->get(AuditService::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),(array)$c->get('config.corporate-access')['categories']));
         $container->set(OperationsAccessBackfillService::class,static fn(Container $c):OperationsAccessBackfillService=>new OperationsAccessBackfillService($c->get(CategoryAccessStoreInterface::class),$c->get(InitializationTransactionInterface::class),$c->get(AuditService::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),(array)$c->get('config.corporate-access')['categories']));
