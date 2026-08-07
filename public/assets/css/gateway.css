@@ -8,6 +8,7 @@
     --gateway-text: #172033;
     --gateway-muted: #667085;
     --gateway-border: #d8dee9;
+    --gateway-control-border: #838d9b;
     --gateway-control-border-strong: #53657a;
     --gateway-control-border-disabled: #98a2b3;
     --gateway-control-disabled-bg: #f3f4f6;
@@ -38,6 +39,40 @@ body {
     font-family: var(--bs-font-sans-serif);
 }
 
+/* Authoritative boundaries and state hierarchy for standard Gateway form controls. */
+.form-control,
+.form-select {
+    border-color: var(--gateway-control-border);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--gateway-blue);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.2);
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid,
+.was-validated .form-control:invalid,
+.was-validated .form-select:invalid {
+    border-color: var(--bs-form-invalid-border-color);
+}
+
+.form-control.is-valid,
+.form-select.is-valid,
+.was-validated .form-control:valid,
+.was-validated .form-select:valid {
+    border-color: var(--bs-form-valid-border-color);
+}
+
+.form-control:disabled,
+.form-select:disabled,
+.form-control[readonly] {
+    background-color: var(--gateway-control-disabled-bg);
+    border-color: var(--gateway-control-border-disabled);
+    opacity: 0.75;
+}
+
 /* Isolated authentication shell */
 .gateway-auth-page { min-height:100vh;margin:0;background:var(--gateway-background); }
 .gateway-auth-main { display:grid;min-height:calc(100vh - 3.5rem);padding:clamp(1rem,4vw,3.5rem);place-items:center; }
@@ -60,7 +95,7 @@ body {
 .gateway-auth-form .mb-4 { margin-bottom:1.5rem; }
 .gateway-auth-form .mb-3 { margin-bottom:1rem; }
 .gateway-auth-form .form-label { color:var(--gateway-navy);font-weight:700; }
-.gateway-auth-form .form-control { display:block;width:100%;min-height:2.9rem;margin-top:.45rem;padding:.65rem .75rem;color:var(--gateway-text);font:inherit;background:var(--gateway-surface);border:1px solid var(--gateway-control-border-strong);border-radius:.5rem; }
+.gateway-auth-form .form-control { display:block;width:100%;min-height:2.9rem;margin-top:.45rem;padding:.65rem .75rem;color:var(--gateway-text);font:inherit;background:var(--gateway-surface);border:1px solid var(--gateway-control-border);border-radius:.5rem; }
 .gateway-auth-form .form-control:focus { border-color:var(--gateway-blue);box-shadow:0 0 0 .2rem rgba(var(--bs-primary-rgb),.2); }
 .gateway-auth-form .form-text { margin-top:.7rem;color:var(--gateway-muted);font-size:.875rem;line-height:1.4; }
 .gateway-auth-password-toggle { display:flex;gap:.55rem;align-items:center;margin:0 0 1.75rem;line-height:1.25; }
