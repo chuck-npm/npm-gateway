@@ -6,8 +6,8 @@ use PHPUnit\Framework\TestCase;
 
 final class CommunityActionWorkspaceTest extends TestCase
 {
-    private const LABELS = ['Application Reviews','Credit Card Purchases','RM Corrections','Renovation Request','Request Appliances','Appliance Distribution','HVAC Service Request','Order Supplies','Eviction Checks','RM Audit'];
-    private const SEGMENTS = ['application-reviews','credit-card-purchases','rm-corrections','renovation-requests','request-appliances','appliance-distribution','hvac-service-requests','order-supplies','eviction-checks','rm-audit'];
+    private const LABELS = ['Application Reviews','Credit Card Purchases','RM Corrections','Renovation Request','Request Appliances','Appliance Distribution','HVAC Service Request','Order Supplies','Eviction Checks','RM Audits'];
+    private const SEGMENTS = ['application-reviews','credit-card-purchases','rm-corrections','renovation-requests','request-appliances','appliance-distribution','hvac-service-requests','order-supplies','eviction-checks','rm-audits'];
 
     public function testProviderIsTheOrderedAuthoritativePlannedCatalog(): void
     {
@@ -17,7 +17,7 @@ final class CommunityActionWorkspaceTest extends TestCase
         self::assertSame(self::LABELS, array_column($actions, 'label'));
         self::assertSame(self::SEGMENTS, array_column($actions, 'route_segment'));
         self::assertSame(range(1, 10), array_column($actions, 'order'));
-        self::assertSame([true,true,true,false,false,false,false,false,false,false], array_column($actions, 'implemented'));
+        self::assertSame([true,true,true,false,false,false,false,false,false,true], array_column($actions, 'implemented'));
         foreach ($actions as $action) self::assertSame($action, $provider->findByRouteSegment($action['route_segment']));
         self::assertNull($provider->findByRouteSegment('unknown-action'));
     }

@@ -12,7 +12,7 @@ $label=$toolCard->accessibilityLabel??($toolCard->enabled?'Open '.$toolCard->tit
 <?php endif; ?>
  <div class="gateway-tool-card__body">
   <p class="gateway-tool-card__category"><?= $escape($toolCard->categoryLabel) ?></p>
-  <h3 class="gateway-tool-card__title"><?= $escape($toolCard->title) ?></h3>
+  <div class="d-flex flex-wrap align-items-center gap-2"><h3 class="gateway-tool-card__title mb-0"><?= $escape($toolCard->title) ?></h3><?php if($toolCard->attentionCount!==null): ?><span class="gateway-status gateway-status--warning"><?= $escape((string)$toolCard->attentionCount.' '.(string)$toolCard->attentionLabel) ?></span><?php endif; ?></div>
   <p class="gateway-tool-card__description"><?= $escape($toolCard->description) ?></p>
  </div>
  <div class="gateway-tool-card__footer">

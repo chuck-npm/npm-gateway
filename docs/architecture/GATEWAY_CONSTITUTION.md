@@ -1,5 +1,9 @@
 # Gateway Constitution
 
+Business-function access is independent of job title and must be granted through its authoritative access category. Structured rich text must be sanitized before persistence. Manager completion may be trusted while preserving append-only audit history. A Corporate return reuses the same immutable workflow record, and reporting/history preserves every completion and return cycle.
+
+Card-level attention indicators represent actionable work, not general activity totals.
+
 1. Gateway is the system of record for NPM business rules.
 2. Each business rule exists exactly once.
 3. The database stores facts, application services enforce rules, and clients present results.

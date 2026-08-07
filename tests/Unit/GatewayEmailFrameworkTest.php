@@ -7,6 +7,12 @@ use NpmGateway\ValueObjects\GatewayEmailMessage;
 use PHPUnit\Framework\TestCase;
 final class GatewayEmailFrameworkTest extends TestCase
 {
+ public function testTrustedRichSectionIsExplicitAndOrdinarySectionsRemainEscaped():void
+ {
+  $rendered=(new GatewayEmailRenderer())->render(new GatewayEmailMessage('Preview','WORKFLOW','Rich',null,null,'neutral',[],[['title'=>'Findings','trusted_sanitized_html'=>'<p><strong>Formatted</strong></p>','plain_text'=>'Formatted']]));
+  self::assertStringContainsString('<p><strong>Formatted</strong></p>',$rendered['html']);self::assertStringNotContainsString('<strong>',$rendered['text']);self::assertStringContainsString('Formatted',$rendered['text']);
+  $this->expectException(\InvalidArgumentException::class);new GatewayEmailMessage('Preview','WORKFLOW','Unsafe',null,null,'neutral',[],[['title'=>'Findings','trusted_sanitized_html'=>'<b>x</b>','plain_text'=>'x','body'=>'x']]);
+ }
  public function testSharedRendererProducesBrandedMultipartEmailSafeOutput():void
  {
   $rendered=(new GatewayEmailRenderer())->render(new GatewayEmailMessage('Safe workflow preview.','WORKFLOW','Test <Title>','Alpha & Community','Pending Review','pending', [['label'=>'Prospect','value'=>'Person <script>'],['label'=>'Property','value'=>'Alpha & Community']],[['title'=>'Comments','body'=>"First <b>line</b>\nSecond line"]],'Open Workflow','https://gateway.example.test/workflow/'.str_repeat('R',26),'Internal use only.'));

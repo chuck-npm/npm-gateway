@@ -16,6 +16,7 @@ final class CorporateToolsProvider implements CorporateToolsProviderInterface
             ['company-notices','Company Notices','Create and review official company communications.','Communications','/company-notices','company-notices.index'],
             ['application-reviews','Application Reviews','Review prospect submissions from all communities.','Corporate','/corporate/application-reviews','corporate.application-reviews.index'],
             ['rm-corrections','RM Corrections','Review and process Rent Manager correction requests from all communities.','Corporate','/corporate/rm-corrections','corporate.rm-corrections.index'],
+            ['rm-audit','RM Audit','Review and manage Rent Manager tenant-file audits.','Corporate','/corporate/rm-audits','corporate.rm-audits.index'],
             ['finance','Finance','Access credit card purchases, reconciliations, invoices, and financial reporting.','Finance','/corporate/finance','corporate.finance.index'],
             ['marketing','Marketing','Manage property websites, advertising, leads, announcements, and marketing resources.','Marketing','/corporate/marketing','corporate.marketing.index'],
             ['admin','Admin','Manage properties, Gateway users, assignments, and system configuration.','Administration','/admin','admin.index'],

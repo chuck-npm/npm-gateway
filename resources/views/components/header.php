@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 $applicationName = isset($applicationName) ? (string) $applicationName : 'NPM Gateway';
 $pageTitle = isset($pageTitle) ? (string) $pageTitle : $applicationName;
+$gatewayCssPath=dirname(__DIR__,3).'/public/assets/css/'.'gateway.css';
+$gatewayCssVersion=is_file($gatewayCssPath)?(string)filemtime($gatewayCssPath):'1';
 ?>
 <!doctype html>
 <html lang="en">
@@ -15,7 +17,7 @@ $pageTitle = isset($pageTitle) ? (string) $pageTitle : $applicationName;
           rel="stylesheet"
           integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
           crossorigin="anonymous">
-    <?php if(!empty($quillAssets)): ?><link href="/assets/vendor/quill/2.0.3/quill.snow.css" rel="stylesheet"><?php endif; ?>
-    <link href="/assets/css/gateway.css?v=20260803-typography" rel="stylesheet">
+    <?php if(!empty($quillAssets)||!empty($rmAuditAssets)): ?><link href="/assets/vendor/quill/2.0.3/quill.snow.css" rel="stylesheet"><?php endif; ?>
+    <link href="/assets/css/gateway.css?v=<?= rawurlencode($gatewayCssVersion) ?>" rel="stylesheet">
 </head>
 <body class="gateway-shell">

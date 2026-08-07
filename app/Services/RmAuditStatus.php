@@ -1,0 +1,1 @@
+<?php declare(strict_types=1);namespace NpmGateway\Services;final class RmAuditStatus{public const LABELS=['open'=>'Open','completed'=>'Completed','returned'=>'Returned'];public const BADGES=['open'=>'warning','completed'=>'success','returned'=>'danger'];}

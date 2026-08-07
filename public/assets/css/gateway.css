@@ -210,6 +210,11 @@ body {
 .gateway-form-section-title { margin:0 0 1.375rem;color:var(--gateway-navy);font-size:1.2rem;font-weight:750;line-height:1.3; }
 .gateway-form-grid { --bs-gutter-x:1.25rem;--bs-gutter-y:1.25rem; }
 .gateway-form-grid .form-text { margin-top:.4rem; }
+.gateway-rm-audit-form__findings { margin-top:1.75rem; }
+.gateway-rm-audit-form__findings > .form-text { margin:.25rem 0 .75rem; }
+.gateway-rm-audit-form #rm-audit-editor.gateway-rm-audit-form__editor.ql-container { height:auto; }
+.gateway-rm-audit-form #rm-audit-editor.gateway-rm-audit-form__editor.ql-container > .ql-editor[contenteditable="true"] { height:auto;min-height:15rem;max-height:28rem;overflow-x:hidden;overflow-y:auto;overflow-wrap:anywhere;font-family:var(--bs-font-sans-serif,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif);font-size:1rem;line-height:1.6; }
+.gateway-rm-audit-form__fallback { min-height:19rem; }
 .gateway-form-actions { display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--gateway-border); }
 .gateway-form-actions--primary-first { justify-content:flex-start;flex-wrap:wrap; }
 .gateway-prospect-information .gateway-prospect-field + .gateway-prospect-field { margin-top:-.5rem; }

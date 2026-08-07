@@ -4,6 +4,7 @@ namespace NpmGateway\Services;
 
 final class CommunityActionProvider
 {
+    public function __construct(private readonly ?RmAuditQueryService $rmAudits=null){}
     private const ACTIONS = [
         ['key'=>'application-reviews','route_segment'=>'application-reviews','label'=>'Application Reviews','description'=>'Review and process community applications.','order'=>1,'implemented'=>true],
         ['key'=>'credit-card-purchases','route_segment'=>'credit-card-purchases','label'=>'Credit Card Purchases','description'=>'Record company credit card purchases and receipt documentation.','order'=>2,'implemented'=>true],
@@ -14,10 +15,15 @@ final class CommunityActionProvider
         ['key'=>'hvac-service-request','route_segment'=>'hvac-service-requests','label'=>'HVAC Service Request','description'=>'Submit HVAC service and repair requests.','order'=>7,'implemented'=>false],
         ['key'=>'order-supplies','route_segment'=>'order-supplies','label'=>'Order Supplies','description'=>'Request supplies for the community.','order'=>8,'implemented'=>false],
         ['key'=>'eviction-checks','route_segment'=>'eviction-checks','label'=>'Eviction Checks','description'=>'Submit and review eviction-related checks.','order'=>9,'implemented'=>false],
-        ['key'=>'rm-audit','route_segment'=>'rm-audit','label'=>'RM Audit','description'=>'Review and complete Rent Manager audit tasks.','order'=>10,'implemented'=>false],
+        ['key'=>'rm-audits','route_segment'=>'rm-audits','label'=>'RM Audits','description'=>'Review and complete Rent Manager audit tasks.','order'=>10,'implemented'=>true],
     ];
 
-    public function actions(): array { return self::ACTIONS; }
+    public function actions(?int $propertyId=null): array
+    {
+        $actions=self::ACTIONS;if($propertyId===null||$this->rmAudits===null)return$actions;
+        $count=$this->rmAudits->actionableCount($propertyId);if($count<1)return$actions;
+        foreach($actions as&$action)if($action['key']==='rm-audits'){$action['attention_count']=$count;$action['attention_label']=$count===1?'Needs Attention':'Need Attention';$action['attention_semantic']='warning';break;}unset($action);return$actions;
+    }
 
     public function findByRouteSegment(string $segment): ?array
     {

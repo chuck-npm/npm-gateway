@@ -16,7 +16,7 @@ use PHPUnit\Framework\TestCase;
 
 final class CategoryAccessManagementTest extends TestCase
 {
-    private array $categories=['operations'=>'Operations','human-resources'=>'Human Resources','company-notices'=>'Company Notices','application-reviews'=>'Application Reviews','rm-corrections'=>'RM Corrections','finance'=>'Finance','marketing'=>'Marketing','admin'=>'Admin','credit-cards'=>'Credit Cards'];
+    private array $categories=['operations'=>'Operations','human-resources'=>'Human Resources','company-notices'=>'Company Notices','application-reviews'=>'Application Reviews','rm-corrections'=>'RM Corrections','rm-audit'=>'RM Audit','finance'=>'Finance','marketing'=>'Marketing','admin'=>'Admin','credit-cards'=>'Credit Cards'];
 
     public function testMigrationContainsApprovedSchemaAndGuardedRollback():void
     {
@@ -88,7 +88,7 @@ final class CategoryAccessManagementTest extends TestCase
     public function testGrantingTimAdminCreatesOnlyOneMembershipAndRealAudits():void
     {
         $store=$this->storeWithUsers();foreach(array_keys($this->categories) as $category)$store->effective[1][$category]=true;foreach(['operations','finance','human-resources','company-notices','application-reviews','marketing','credit-cards'] as $category)$store->effective[2][$category]=true;$audits=new CategoryAccessAuditStore();$service=new CategoryAccessAdministrationService($store,new CategoryAccessTransaction(),new AuditService($audits,new PublicIdGenerator()),new PublicIdGenerator(),new CategoryAccessClock(),$this->categories);$actor=new AuthenticatedUser(1,11,str_repeat('C',26),str_repeat('E',26),'chuck','Chuck');$access=[str_repeat('C',26)=>array_fill_keys(array_keys($this->categories),true),str_repeat('T',26)=>array_fill_keys(array_keys($this->categories),true)];
-        self::assertSame(2,$service->applyChanges(['users'=>[str_repeat('C',26),str_repeat('T',26)],'access'=>$access],$actor));self::assertCount(18,$store->memberships());self::assertTrue($store->effective[2]['admin']);self::assertSame(['admin.category_access_granted','admin.category_access_granted','admin.category_access_updated'],array_column($audits->events,'event_type'));self::assertSame(0,$service->applyChanges(['users'=>[str_repeat('C',26),str_repeat('T',26)],'access'=>$access],$actor));self::assertCount(3,$audits->events);
+        self::assertSame(3,$service->applyChanges(['users'=>[str_repeat('C',26),str_repeat('T',26)],'access'=>$access],$actor));self::assertCount(20,$store->memberships());self::assertTrue($store->effective[2]['admin']);self::assertSame(['admin.category_access_granted','admin.category_access_granted','admin.category_access_granted','admin.category_access_updated'],array_column($audits->events,'event_type'));self::assertSame(0,$service->applyChanges(['users'=>[str_repeat('C',26),str_repeat('T',26)],'access'=>$access],$actor));self::assertCount(4,$audits->events);
     }
 
     public function testServiceRejectsOmittedOrUnknownUsersBeforeMutation():void
