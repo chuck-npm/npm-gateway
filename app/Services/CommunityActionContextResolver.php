@@ -13,7 +13,7 @@ final readonly class CommunityActionContextResolver
 
     public function resolve(AuthenticatedRequestContext $requestContext, string $propertySlug): CommunityActionContext
     {
-        $result = $this->propertyAccess->resolveAccessibleProperty($requestContext, $propertySlug);
+        $result = $this->propertyAccess->resolveAccessibleCommunity($requestContext, $propertySlug);
         if ($result['status'] === 'not_found') throw new CommunityActionPropertyNotFoundException();
         if ($result['status'] !== 'authorized') throw new CommunityActionPropertyForbiddenException();
         $property = $result['property'];

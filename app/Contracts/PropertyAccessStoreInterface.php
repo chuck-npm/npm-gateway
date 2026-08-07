@@ -4,8 +4,8 @@ namespace NpmGateway\Contracts;
 interface PropertyAccessStoreInterface
 {
  public function hasEffectiveAccess(int $userId,int $propertyId):bool;
- public function accessibleActiveProperties(int $userId):array;
- public function activePropertyBySlug(string $slug):?array;
+ public function accessibleActiveCommunities(int $userId):array;
+ public function activeCommunityBySlug(string $slug):?array;
  public function employeesForMatrix():array;
  public function activeProperties():array;
  public function memberships():array;
