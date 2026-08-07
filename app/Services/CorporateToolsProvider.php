@@ -15,10 +15,11 @@ final class CorporateToolsProvider implements CorporateToolsProviderInterface
             ['human-resources','Human Resources','Manage employees, time off, timecards, payroll documents, and personnel records.','Human Resources','/human-resources','hr.index'],
             ['company-notices','Company Notices','Create and review official company communications.','Communications','/company-notices','company-notices.index'],
             ['application-reviews','Application Reviews','Review prospect submissions from all communities.','Corporate','/corporate/application-reviews','corporate.application-reviews.index'],
+            ['rm-corrections','RM Corrections','Review and process Rent Manager correction requests from all communities.','Corporate','/corporate/rm-corrections','corporate.rm-corrections.index'],
             ['finance','Finance','Access credit card purchases, reconciliations, invoices, and financial reporting.','Finance','/corporate/finance','corporate.finance.index'],
             ['marketing','Marketing','Manage property websites, advertising, leads, announcements, and marketing resources.','Marketing','/corporate/marketing','corporate.marketing.index'],
             ['admin','Admin','Manage properties, Gateway users, assignments, and system configuration.','Administration','/admin','admin.index'],
-            ['credit-cards','Credit Cards','Manage employee credit-card assignments and records.','Credit Cards',null,null],
+            ['credit-cards','Credit Card Purchases','Record and manage company credit card purchases and receipt documentation.','Credit Cards','/corporate/credit-card-purchases','corporate.credit-card-purchases.index'],
         ];
         return array_map(function(array $tool,int $index)use($context):ToolCard{
             [$key,$title,$description,$categoryLabel,$route,$routeName]=$tool;$allowed=$this->access->canAccessCategory($context,$key);$available=$route!==null&&$routeName!==null;$enabled=$allowed&&$available;

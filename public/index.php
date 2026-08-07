@@ -67,7 +67,12 @@ use NpmGateway\Repositories\ApplicationReviewRepository;
 use NpmGateway\Services\ApplicationReviewService;
 use NpmGateway\Services\ApplicationReviewQueryService;
 use NpmGateway\Http\Controllers\CreditCardPurchaseController;
+use NpmGateway\Http\Controllers\CorporateCreditCardPurchaseController;
 use NpmGateway\Services\CreditCardPurchaseService;
+use NpmGateway\Http\Controllers\RmCorrectionController;
+use NpmGateway\Http\Controllers\CorporateRmCorrectionController;
+use NpmGateway\Services\RmCorrectionQueryService;
+use NpmGateway\Services\RmCorrectionService;
 
 $application=require dirname(__DIR__).'/bootstrap/app.php';$root=$application['root'];$environment=(string)$application['config']['app']['environment'];
 $path=parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH);$path=is_string($path)?rtrim($path,'/'):'/';$path=$path===''?'/':$path;
@@ -98,7 +103,10 @@ $communityActions=new CommunityActionsController($container->get(PropertyAccessS
 $applicationReviews=new ApplicationReviewController($container->get(CommunityActionContextResolver::class),$container->get(ApplicationReviewQueryService::class),$container->get(ApplicationReviewService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
 $corporateApplicationReviews=new CorporateApplicationReviewController($container->get(CorporateAccessService::class),$container->get(ApplicationReviewQueryService::class),$container->get(ApplicationReviewService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
 $creditCardPurchases=new CreditCardPurchaseController($container->get(CommunityActionContextResolver::class),$container->get(CreditCardPurchaseService::class),$container->get(GatewayStorageService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
-$kernel=new WebKernel($authentication,new DashboardController($csrf,$container->get(DashboardHomeService::class),$views,$container->get(NotificationQueryService::class)),new RequireAuthenticationMiddleware($container->get(SessionService::class),$cookie,$loginReturns),$employees,$properties,$hr,$hrEmployees,$admin,$notificationController,$companyNoticeController,new StorageController($container->get(PublishedStorageService::class)),$corporate,$emergencyContact,$hrEmergencyContacts,$managerMaintenanceEmergencyContact,$communityActions,$applicationReviews,$corporateApplicationReviews,$creditCardPurchases);
+$corporateCreditCardPurchases=new CorporateCreditCardPurchaseController($container->get(CorporateAccessService::class),$container->get(CreditCardPurchaseService::class),$container->get(GatewayStorageService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
+$rmCorrections=new RmCorrectionController($container->get(CommunityActionContextResolver::class),$container->get(RmCorrectionQueryService::class),$container->get(RmCorrectionService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
+$corporateRmCorrections=new CorporateRmCorrectionController($container->get(CorporateAccessService::class),$container->get(RmCorrectionQueryService::class),$container->get(RmCorrectionService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
+$kernel=new WebKernel($authentication,new DashboardController($csrf,$container->get(DashboardHomeService::class),$views,$container->get(NotificationQueryService::class)),new RequireAuthenticationMiddleware($container->get(SessionService::class),$cookie,$loginReturns),$employees,$properties,$hr,$hrEmployees,$admin,$notificationController,$companyNoticeController,new StorageController($container->get(PublishedStorageService::class)),$corporate,$emergencyContact,$hrEmergencyContacts,$managerMaintenanceEmergencyContact,$communityActions,$applicationReviews,$corporateApplicationReviews,$creditCardPurchases,$corporateCreditCardPurchases,$rmCorrections,$corporateRmCorrections);
 $request=new Request(strtoupper((string)($_SERVER['REQUEST_METHOD']??'GET')),$path,$_POST,array_map('strval',$_COOKIE),array_map('strval',$_SERVER),array_map('strval',$_GET),$_FILES);
 $response=$kernel->handle($request,$container->get(ClockInterface::class)->now());http_response_code($response->status);
 foreach($response->headers as $name=>$value)header($name.': '.$value);

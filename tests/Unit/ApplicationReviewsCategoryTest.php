@@ -8,7 +8,7 @@ final class ApplicationReviewsCategoryTest extends TestCase
  public function testCategoryConfigurationAndMigrationContract():void
  {
   $root=dirname(__DIR__,2);$config=require $root.'/config/corporate-access.php';
-  self::assertSame(['operations','human-resources','company-notices','application-reviews','finance','marketing','admin','credit-cards'],array_keys($config['categories']));
+  self::assertSame(['operations','human-resources','company-notices','application-reviews','rm-corrections','finance','marketing','admin','credit-cards'],array_keys($config['categories']));
   self::assertSame('Application Reviews',$config['categories']['application-reviews']);
   self::assertSame('202608050016_application_reviews_category',ApplicationReviewsCategorySchema::MIGRATION);
   $migration=(string)file_get_contents($root.'/database/migrations/202608050016_application_reviews_category.php');

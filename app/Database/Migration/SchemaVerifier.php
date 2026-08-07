@@ -87,7 +87,7 @@ final class SchemaVerifier
         if(isset($executed[EmployeeDateOfBirthSchema::MIGRATION])){$this->verifyEmployeeDateOfBirthSchema();}
         if(isset($executed[UserCategoryAccessSchema::MIGRATION])){$this->verifyUserCategoryAccessSchema();}
         if(isset($executed[NotificationsSchema::MIGRATION])){$this->verifyNotificationsSchema();}
-        if(isset($executed[ApplicationReviewsCategorySchema::MIGRATION])){$this->verifyApplicationReviewsCategorySchema();}elseif(isset($executed[OperationsCategorySchema::MIGRATION])){$this->verifyOperationsCategorySchema();}elseif(isset($executed[CompanyNoticesCategorySchema::MIGRATION])){$this->verifyCompanyNoticesCategorySchema();}
+        if(isset($executed[RmCorrectionsSchema::MIGRATION])){$this->verifyRmCorrectionsSchema();}elseif(isset($executed[ApplicationReviewsCategorySchema::MIGRATION])){$this->verifyApplicationReviewsCategorySchema();}elseif(isset($executed[OperationsCategorySchema::MIGRATION])){$this->verifyOperationsCategorySchema();}elseif(isset($executed[CompanyNoticesCategorySchema::MIGRATION])){$this->verifyCompanyNoticesCategorySchema();}
         if(isset($executed[GatewayStorageSchema::MIGRATION])){$this->verifyGatewayStorageSchema();}
         if(isset($executed[StorageSystemCleanupActorSchema::MIGRATION])){$this->verifyStorageSystemCleanupActorSchema();}
         if(isset($executed[EmployeeEmergencyContactSchema::MIGRATION])){$this->verifyEmployeeEmergencyContactSchema();}
@@ -156,6 +156,10 @@ final class SchemaVerifier
     }
     private function verifyOperationsCategorySchema():void{$this->assertCheckValues('user_category_access','chk_user_category_access_category',OperationsCategorySchema::SQL_CATEGORIES);$this->assertCheckValues('notifications','chk_notifications_type',CompanyNoticesCategorySchema::NOTIFICATION_TYPES);}
     private function verifyApplicationReviewsCategorySchema():void{$this->assertCheckValues('user_category_access','chk_user_category_access_category',ApplicationReviewsCategorySchema::SQL_CATEGORIES);$this->assertCheckValues('notifications','chk_notifications_type',CompanyNoticesCategorySchema::NOTIFICATION_TYPES);}
+    private function verifyRmCorrectionsSchema():void
+    {
+        $this->assertCheckValues('user_category_access','chk_user_category_access_category',['operations','finance','human-resources','company-notices','application-reviews','rm-corrections','marketing','admin','credit-cards']);$request=$this->tableMetadata('rm_correction_requests');$history=$this->tableMetadata('rm_correction_history');foreach(RmCorrectionsSchema::REQUEST_COLUMNS as $column)if(!isset($request['columns'][$column]))throw new MigrationException("Missing column {$column} on rm_correction_requests.");foreach(RmCorrectionsSchema::HISTORY_COLUMNS as $column)if(!isset($history['columns'][$column]))throw new MigrationException("Missing column {$column} on rm_correction_history.");foreach(['fk_rm_corrections_property','fk_rm_corrections_submitter','fk_rm_corrections_reviewer'] as $key)if(($request['foreign_keys'][$key]??'')!=='RESTRICT')throw new MigrationException("Invalid foreign key {$key}.");foreach(['fk_rm_correction_history_request','fk_rm_correction_history_actor'] as $key)if(($history['foreign_keys'][$key]??'')!=='RESTRICT')throw new MigrationException("Invalid foreign key {$key}.");if(!isset($request['checks']['chk_rm_corrections_status']))throw new MigrationException('Missing RM correction status check.');if(!isset($history['checks']['chk_rm_correction_history_event']))throw new MigrationException('Missing RM correction history event check.');$this->assertCheckValues('notifications','chk_notifications_type',CompanyNoticesCategorySchema::NOTIFICATION_TYPES);
+    }
     private function verifyGatewayStorageSchema():void
     {
         $storage=$this->tableMetadata('storage_objects');$links=$this->tableMetadata('notification_storage_objects');

@@ -17,7 +17,7 @@ final class CommunityActionWorkspaceTest extends TestCase
         self::assertSame(self::LABELS, array_column($actions, 'label'));
         self::assertSame(self::SEGMENTS, array_column($actions, 'route_segment'));
         self::assertSame(range(1, 10), array_column($actions, 'order'));
-        self::assertSame([true,true,false,false,false,false,false,false,false,false], array_column($actions, 'implemented'));
+        self::assertSame([true,true,true,false,false,false,false,false,false,false], array_column($actions, 'implemented'));
         foreach ($actions as $action) self::assertSame($action, $provider->findByRouteSegment($action['route_segment']));
         self::assertNull($provider->findByRouteSegment('unknown-action'));
     }
@@ -63,7 +63,7 @@ final class CommunityActionWorkspaceTest extends TestCase
         $context = (string) file_get_contents($root.'/app/ValueObjects/CommunityActionContext.php');
         $resolver = (string) file_get_contents($root.'/app/Services/CommunityActionContextResolver.php');
         foreach (['userId','userPublicId','employeeId','employeePublicId','propertyId','propertyPublicId','propertySlug','propertyCode','propertyDisplayName','accessVerified'] as $field) self::assertStringContainsString($field, $context);
-        self::assertStringContainsString('resolveAccessibleProperty', $resolver);
+        self::assertStringContainsString('resolveAccessibleCommunity', $resolver);
         self::assertStringContainsString('CommunityActionPropertyNotFoundException', $resolver);
         self::assertStringContainsString('CommunityActionPropertyForbiddenException', $resolver);
     }

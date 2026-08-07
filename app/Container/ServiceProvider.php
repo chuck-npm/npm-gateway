@@ -141,6 +141,11 @@ use NpmGateway\Services\CreditCardPurchaseValidator;
 use NpmGateway\Services\CreditCardReceiptTestCleanupService;
 use NpmGateway\Services\ApplicationReviewQueryService;
 use NpmGateway\Notifications\ApplicationReviewEmailSender;
+use NpmGateway\Repositories\RmCorrectionRepository;
+use NpmGateway\Services\RmCorrectionValidator;
+use NpmGateway\Services\RmCorrectionQueryService;
+use NpmGateway\Services\RmCorrectionService;
+use NpmGateway\Notifications\RmCorrectionEmailSender;
 final class ServiceProvider
 {
     /** @param array<string, mixed> $application */
@@ -155,6 +160,7 @@ final class ServiceProvider
         $protectedPrincipal = require $root . '/config/protected-principal.php';
         $storage = require $root . '/config/storage.php';
         $applicationReviews = require $root . '/config/application-reviews.php';
+        $rmCorrections = require $root . '/config/rm-corrections.php';
         /** @var AuthenticationConfig $authentication */
         $authentication = require $root . '/config/authentication.php';
         $container->instance('config.notification', $notice);
@@ -163,6 +169,7 @@ final class ServiceProvider
         $container->instance(ProtectedPrincipalConfig::class,ProtectedPrincipalConfig::fromArray($protectedPrincipal,(array)$corporateAccess['categories']));
         $container->instance('config.storage',$storage);
         $container->instance('config.application-reviews',$applicationReviews);
+        $container->instance('config.rm-corrections',$rmCorrections);
         $container->instance(AuthenticationConfig::class, $authentication);
         $container->set(mysqli::class, static fn (): mysqli => MySqlConnectionFactory::connect(DatabaseProfiles::load('application', $root)));
         $container->set(PasswordGeneratorInterface::class, static fn (): PasswordGeneratorInterface => new SecurePasswordGenerator());
@@ -209,6 +216,7 @@ final class ServiceProvider
         $container->set(PropertyRepository::class,static fn(Container $c):PropertyRepository=>new PropertyRepository($c->get(mysqli::class)));
         $container->set(PropertyAccessRepository::class,static fn(Container $c):PropertyAccessRepository=>new PropertyAccessRepository($c->get(mysqli::class)));
         $container->set(ApplicationReviewRepository::class,static fn(Container $c):ApplicationReviewRepository=>new ApplicationReviewRepository($c->get(mysqli::class)));
+        $container->set(RmCorrectionRepository::class,static fn(Container $c):RmCorrectionRepository=>new RmCorrectionRepository($c->get(mysqli::class)));
         $container->set(CreditCardPurchaseRepository::class,static fn(Container $c):CreditCardPurchaseRepository=>new CreditCardPurchaseRepository($c->get(mysqli::class)));
         $container->set(PropertyAccessStoreInterface::class,static fn(Container $c):PropertyAccessStoreInterface=>$c->get(PropertyAccessRepository::class));
         $container->set(PropertyStoreInterface::class,static fn(Container $c):PropertyStoreInterface=>$c->get(PropertyRepository::class));
@@ -267,6 +275,10 @@ final class ServiceProvider
         $container->set(ApplicationReviewQueryService::class,static fn(Container $c):ApplicationReviewQueryService=>new ApplicationReviewQueryService($c->get(ApplicationReviewRepository::class)));
         $container->set(ApplicationReviewEmailSender::class,static fn(Container $c):ApplicationReviewEmailSender=>new ApplicationReviewEmailSender((array)$c->get('config.application-reviews'),null,$c->get(GatewayEmailRenderer::class)));
         $container->set(ApplicationReviewService::class,static fn(Container $c):ApplicationReviewService=>new ApplicationReviewService($c->get(ApplicationReviewRepository::class),$c->get(ApplicationReviewValidator::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class),$c->get(ApplicationReviewEmailSender::class),$c->get(PropertyAccessService::class)));
+        $container->set(RmCorrectionValidator::class,static fn():RmCorrectionValidator=>new RmCorrectionValidator());
+        $container->set(RmCorrectionQueryService::class,static fn(Container $c):RmCorrectionQueryService=>new RmCorrectionQueryService($c->get(RmCorrectionRepository::class)));
+        $container->set(RmCorrectionEmailSender::class,static fn(Container $c):RmCorrectionEmailSender=>new RmCorrectionEmailSender((array)$c->get('config.rm-corrections'),null,$c->get(GatewayEmailRenderer::class)));
+        $container->set(RmCorrectionService::class,static fn(Container $c):RmCorrectionService=>new RmCorrectionService($c->get(RmCorrectionRepository::class),$c->get(RmCorrectionValidator::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class),$c->get(RmCorrectionEmailSender::class),$c->get(PropertyAccessService::class)));
         $container->set(CreditCardPurchaseValidator::class,static fn():CreditCardPurchaseValidator=>new CreditCardPurchaseValidator());
         $container->set(CreditCardReceiptTestCleanupService::class,static fn(Container $c):CreditCardReceiptTestCleanupService=>new CreditCardReceiptTestCleanupService($c->get(StorageConfiguration::class),$c->get(StorageAdapterInterface::class),$c->get(StorageObjectRepository::class)));
         $container->set(CreditCardPurchaseService::class,static fn(Container $c):CreditCardPurchaseService=>new CreditCardPurchaseService($c->get(CreditCardPurchaseRepository::class),$c->get(CreditCardPurchaseValidator::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class),$c->get(PropertyAccessService::class),$c->get(GatewayStorageService::class),$c->get(StorageObjectStoreInterface::class)));

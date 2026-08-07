@@ -26,15 +26,15 @@ final class CorporateToolsNavigationTest extends TestCase
     }
     public function testProviderAlwaysReturnsAllCategoriesWithAccessAndAvailabilityStates():void
     {
-        $access=$this->access(['human-resources','credit-cards']);$cards=(new CorporateToolsProvider($access))->tools(self::contextFor('hruser'));self::assertSame(['operations','human-resources','company-notices','application-reviews','finance','marketing','admin','credit-cards'],array_map(static fn($card)=>$card->key,$cards));self::assertCount(8,$cards);
+        $access=$this->access(['human-resources','credit-cards']);$cards=(new CorporateToolsProvider($access))->tools(self::contextFor('hruser'));self::assertSame(['operations','human-resources','company-notices','application-reviews','rm-corrections','finance','marketing','admin','credit-cards'],array_map(static fn($card)=>$card->key,$cards));self::assertCount(9,$cards);
         self::assertTrue($cards[1]->enabled);self::assertSame('/human-resources',$cards[1]->route);self::assertSame('Open Human Resources',$cards[1]->footerLabel);
-        self::assertFalse($cards[7]->enabled);self::assertNull($cards[7]->route);self::assertSame('Module planned',$cards[7]->footerLabel);
-        foreach([0,2,3,4,5,6] as $index){self::assertFalse($cards[$index]->enabled);self::assertNull($cards[$index]->route);self::assertSame('Access not assigned',$cards[$index]->footerLabel);}
+        self::assertTrue($cards[8]->enabled);self::assertSame('/corporate/credit-card-purchases',$cards[8]->route);self::assertSame('Open Credit Card Purchases',$cards[8]->footerLabel);
+        foreach([0,2,3,4,5,6,7] as $index){self::assertFalse($cards[$index]->enabled);self::assertNull($cards[$index]->route);self::assertSame('Access not assigned',$cards[$index]->footerLabel);}
     }
     public function testEveryAuthenticatedUserSeesCardsAndNavbarWithoutUnsafeDestinations():void
     {
         $html=$this->render('unlisted',[]);foreach(['Corporate Tools','Operations','Finance','Human Resources','Company Notices','Marketing','Admin','Credit Cards','Access not assigned','aria-disabled="true"'] as $text)self::assertStringContainsString($text,$html);self::assertStringNotContainsString('href="#"',$html);self::assertStringNotContainsString('javascript:void',$html);self::assertStringNotContainsString('corporate-access.php',$html);
-        $corporate=substr($html,(int)strpos($html,'id="corporate-tools"'),(int)strpos($html,'id="gateway-setup-title"')-(int)strpos($html,'id="corporate-tools"'));self::assertSame(8,substr_count($corporate,'data-tool-key='));self::assertStringNotContainsString('<a ',$corporate);
+        $corporate=substr($html,(int)strpos($html,'id="corporate-tools"'),(int)strpos($html,'id="gateway-setup-title"')-(int)strpos($html,'id="corporate-tools"'));self::assertSame(9,substr_count($corporate,'data-tool-key='));self::assertStringNotContainsString('<a ',$corporate);
     }
     public function testTimConfigurationGrantsEveryCategoryAndOnlyImplementedHrLinks():void
     {

@@ -1,0 +1,29 @@
+<?php
+declare(strict_types=1);
+namespace NpmGateway\Repositories;
+use mysqli;
+final class RmCorrectionRepository
+{
+ public function __construct(private readonly mysqli $db){}
+ public function insert(array $r):int{$s=$this->db->prepare("INSERT INTO rm_correction_requests(public_id,property_id,submitted_by_user_id,lot_address,tenant_name,correction_request,status,submitted_at,updated_at) VALUES(?,?,?,?,?,?,'pending_review',?,?)");$s->bind_param('siisssss',$r['public_id'],$r['property_id'],$r['actor_id'],$r['lot_address'],$r['tenant_name'],$r['correction_request'],$r['timestamp'],$r['timestamp']);$s->execute();$id=$this->db->insert_id;$s->close();return $id;}
+ public function historyInsert(array $h):void{$s=$this->db->prepare('INSERT INTO rm_correction_history(public_id,rm_correction_request_id,event_type,actor_user_id,comments,created_at) VALUES(?,?,?,?,?,?)');$s->bind_param('sisiss',$h['public_id'],$h['request_id'],$h['event_type'],$h['actor_id'],$h['comments'],$h['timestamp']);$s->execute();$s->close();}
+ public function managerList(int $propertyId,string $status,string $search):array{return $this->list("r.property_id=?",'i',[$propertyId],$status,'',$search,false);}
+ public function corporateList(string $status,string $propertyPublicId,string $search):array{return $this->list('1=1','',[],$status,$propertyPublicId,$search,true);}
+ private function list(string $scope,string $types,array $params,string $status,string $propertyPublicId,string $search,bool $corporate):array
+ {
+  $sql="SELECT r.public_id,r.lot_address,r.tenant_name,r.status,r.submitted_at,r.updated_at,p.display_name property_name,CONCAT(e.first_name,' ',e.last_name) submitted_by_name FROM rm_correction_requests r JOIN properties p ON p.id=r.property_id JOIN users u ON u.id=r.submitted_by_user_id JOIN employees e ON e.id=u.employee_id WHERE {$scope} AND p.status='active' AND p.slug<>'corporate'";
+  if(in_array($status,['pending_review','approved','denied','more_information_needed'],true)){$sql.=' AND r.status=?';$types.='s';$params[]=$status;}if($corporate&&preg_match('/^[0-9A-HJKMNP-TV-Z]{26}$/',$propertyPublicId)){$sql.=' AND p.public_id=?';$types.='s';$params[]=$propertyPublicId;}if($search!==''){$q='%'.$search.'%';$sql.=" AND (r.lot_address LIKE ? OR r.tenant_name LIKE ? OR r.correction_request LIKE ? OR CONCAT(e.first_name,' ',e.last_name) LIKE ?)";$types.='ssss';array_push($params,$q,$q,$q,$q);}
+  $sql.=" ORDER BY CASE r.status WHEN 'pending_review' THEN 0 WHEN 'more_information_needed' THEN 1 WHEN 'approved' THEN 2 WHEN 'denied' THEN 3 ELSE 4 END,r.updated_at DESC,r.id DESC";$s=$this->db->prepare($sql);if($types!=='')$s->bind_param($types,...$params);$s->execute();$rows=$s->get_result()->fetch_all(MYSQLI_ASSOC);$s->close();return $rows;
+ }
+ public function managerDetail(string $publicId,int $propertyId,bool $lock=false):?array{return $this->detail($publicId,'r.property_id=?',$propertyId,$lock);}
+ public function corporateDetail(string $publicId,bool $lock=false):?array{return $this->detail($publicId,'1=1',null,$lock);}
+ private function detail(string $publicId,string $scope,?int $propertyId,bool $lock):?array
+ {
+  $sql="SELECT r.*,p.public_id property_public_id,p.slug property_slug,p.display_name property_name,p.manager_email,CONCAT(se.first_name,' ',se.last_name) submitted_by_name,CONCAT(re.first_name,' ',re.last_name) reviewed_by_name FROM rm_correction_requests r JOIN properties p ON p.id=r.property_id JOIN users su ON su.id=r.submitted_by_user_id JOIN employees se ON se.id=su.employee_id LEFT JOIN users ru ON ru.id=r.reviewed_by_user_id LEFT JOIN employees re ON re.id=ru.employee_id WHERE r.public_id=? AND {$scope} AND p.status='active' AND p.slug<>'corporate' LIMIT 1".($lock?' FOR UPDATE':'');$s=$this->db->prepare($sql);if($propertyId===null)$s->bind_param('s',$publicId);else$s->bind_param('si',$publicId,$propertyId);$s->execute();$row=$s->get_result()->fetch_assoc();$s->close();if(!is_array($row))return null;$row['history']=$this->history((int)$row['id']);return $row;
+ }
+ public function history(int $id):array{$s=$this->db->prepare("SELECT h.public_id,h.event_type,h.comments,h.created_at,CONCAT(e.first_name,' ',e.last_name) actor_name FROM rm_correction_history h JOIN users u ON u.id=h.actor_user_id JOIN employees e ON e.id=u.employee_id WHERE h.rm_correction_request_id=? ORDER BY h.created_at,h.id");$s->bind_param('i',$id);$s->execute();$rows=$s->get_result()->fetch_all(MYSQLI_ASSOC);$s->close();return $rows;}
+ public function transition(int $id,string $from,string $to,int $actorId,string $timestamp):bool{$s=$this->db->prepare('UPDATE rm_correction_requests SET status=?,updated_at=?,reviewed_by_user_id=?,reviewed_at=? WHERE id=? AND status=?');$s->bind_param('ssisis',$to,$timestamp,$actorId,$timestamp,$id,$from);$s->execute();$ok=$s->affected_rows===1;$s->close();return $ok;}
+ public function respond(int $id,string $timestamp):bool{$s=$this->db->prepare("UPDATE rm_correction_requests SET status='pending_review',updated_at=?,reviewed_by_user_id=NULL,reviewed_at=NULL WHERE id=? AND status='more_information_needed'");$s->bind_param('si',$timestamp,$id);$s->execute();$ok=$s->affected_rows===1;$s->close();return $ok;}
+ public function counts(?int $propertyId=null):array{$sql='SELECT status,COUNT(*) total FROM rm_correction_requests'.($propertyId!==null?' WHERE property_id=?':'').' GROUP BY status';$s=$this->db->prepare($sql);if($propertyId!==null)$s->bind_param('i',$propertyId);$s->execute();$rows=$s->get_result()->fetch_all(MYSQLI_ASSOC);$s->close();$out=array_fill_keys(['pending_review','approved','denied','more_information_needed'],0);foreach($rows as $r)$out[$r['status']]=(int)$r['total'];return $out;}
+ public function properties():array{return $this->db->query("SELECT public_id,display_name FROM properties WHERE status='active' AND slug<>'corporate' ORDER BY display_name,id")->fetch_all(MYSQLI_ASSOC);}
+}

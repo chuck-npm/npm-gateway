@@ -142,6 +142,8 @@ Property assignment and Property Access are distinct authorities. Assignments pr
 Community Actions are always property-scoped. Every Community Action is recorded and authorized against both the authenticated user and the selected property. The property is derived exclusively from the authorized route context and must never be selected, submitted, or overridden through form data. Property Access is rechecked on every property workspace and action request. A Property Access grant determines which property workspaces a user may open; it does not modify employment assignment history.
 
 Managers perform property-scoped work. Corporate reviews and manages that work through centralized function-scoped workspaces. Both views operate on the same business records and append-only history. Corporate function authorization does not imply manager Property Access, and Property Access does not imply Corporate function authorization.
+
+Workflow access follows business function rather than employee job title. Corporate workflow authorization is category-scoped independently of Property Access. Operational requests may loop through clarification without duplicate records: the original submission stays immutable, while decisions and responses are retained as append-only business history.
 # Company communications
 
 Global Notifications are assigned independently of Corporate category access. Acknowledgment proves reading, not legal agreement. Historical audience, first-view, acknowledgment, and delivery evidence must not be silently recalculated or deleted.
@@ -151,4 +153,8 @@ Gateway-generated notifications are delivered only to active eligible employees 
 Emergency Contact Information is employee-owned restricted profile data. Self-service identity comes only from the authenticated session, one current contact is permitted per employee, and no administrator or category grant may redirect the self-service route to another employee. Contact values are excluded from URLs, directories, notifications, email, logs, and audit metadata. Maintenance access requires a future authorized HR workflow.
 # Financial record invariants
 
-Financial records are never silently deleted. Property and submitter identity come from trusted server context, not posted identity fields. Financial corrections require append-only history. Receipt absence does not prevent recording a transaction, but it must be explicitly declared and documented.
+Financial records are never silently deleted or overwritten. Property and original submitter identity come from trusted server context, remain immutable, and are not accepted from posted identity fields. Every financial correction requires a reason, authenticated actor, timestamp, stale-edit protection, and append-only history containing safe before-and-after evidence. Receipt absence does not prevent recording a transaction, but it must be explicitly declared and documented.
+
+A financial workflow may expose multiple explicitly authorized entry points, but they must operate on one authoritative business record, receipt set, and history. Corporate users may select or correct an expense property only through a category-authorized Corporate workflow. Community Actions continues to derive its property from the authorized route context and never permits property correction.
+
+Corporate personal-entry workspaces must not imply company-wide visibility. Authenticated submitter scope is enforced server-side for every Corporate list, summary, detail, edit, correction, and receipt route. Property-scoped operational records remain visible to authorized property users regardless of who submitted them or which authorized entry point created them.

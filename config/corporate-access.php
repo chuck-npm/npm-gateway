@@ -5,6 +5,7 @@ return ['categories'=>[
     'human-resources'=>'Human Resources',
     'company-notices'=>'Company Notices',
     'application-reviews'=>'Application Reviews',
+    'rm-corrections'=>'RM Corrections',
     'finance'=>'Finance',
     'marketing'=>'Marketing',
     'admin'=>'Admin',

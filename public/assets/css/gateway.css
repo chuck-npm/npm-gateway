@@ -655,6 +655,8 @@ body {
 .gateway-review-record__label { color:#53657a;font-size:.8rem;font-weight:750;letter-spacing:.02em; }
 .gateway-review-record__value { margin-bottom:0;overflow-wrap:anywhere; }
 .gateway-review-record__fields > :nth-last-child(-n+2) { border-bottom:0; }
+.gateway-review-record h3 { margin:1.5rem 0 .5rem;color:var(--gateway-navy);font-size:1.05rem; }
+.gateway-review-record h3 + .gateway-review-timeline__comments { margin-top:0;white-space:pre-wrap; }
 .gateway-review-timeline { margin-top:1.5rem;padding:1.25rem;background:var(--gateway-surface);border:1px solid var(--gateway-border);border-radius:.75rem; }
 .gateway-review-timeline h2 { margin:0 0 1rem;color:var(--gateway-navy);font-size:1.2rem; }
 .gateway-review-timeline__events { display:grid;gap:0;margin:0;padding:0;list-style:none; }
