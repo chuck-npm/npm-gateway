@@ -145,6 +145,7 @@ use NpmGateway\Repositories\RmCorrectionRepository;
 use NpmGateway\Services\RmCorrectionValidator;
 use NpmGateway\Services\RmCorrectionQueryService;
 use NpmGateway\Services\RmCorrectionService;
+use NpmGateway\Services\OperationsRmCorrectionOverviewService;
 use NpmGateway\Notifications\RmCorrectionEmailSender;
 final class ServiceProvider
 {
@@ -277,6 +278,7 @@ final class ServiceProvider
         $container->set(ApplicationReviewService::class,static fn(Container $c):ApplicationReviewService=>new ApplicationReviewService($c->get(ApplicationReviewRepository::class),$c->get(ApplicationReviewValidator::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class),$c->get(ApplicationReviewEmailSender::class),$c->get(PropertyAccessService::class)));
         $container->set(RmCorrectionValidator::class,static fn():RmCorrectionValidator=>new RmCorrectionValidator());
         $container->set(RmCorrectionQueryService::class,static fn(Container $c):RmCorrectionQueryService=>new RmCorrectionQueryService($c->get(RmCorrectionRepository::class)));
+        $container->set(OperationsRmCorrectionOverviewService::class,static fn(Container $c):OperationsRmCorrectionOverviewService=>new OperationsRmCorrectionOverviewService($c->get(RmCorrectionRepository::class)));
         $container->set(RmCorrectionEmailSender::class,static fn(Container $c):RmCorrectionEmailSender=>new RmCorrectionEmailSender((array)$c->get('config.rm-corrections'),null,$c->get(GatewayEmailRenderer::class)));
         $container->set(RmCorrectionService::class,static fn(Container $c):RmCorrectionService=>new RmCorrectionService($c->get(RmCorrectionRepository::class),$c->get(RmCorrectionValidator::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class),$c->get(RmCorrectionEmailSender::class),$c->get(PropertyAccessService::class)));
         $container->set(CreditCardPurchaseValidator::class,static fn():CreditCardPurchaseValidator=>new CreditCardPurchaseValidator());

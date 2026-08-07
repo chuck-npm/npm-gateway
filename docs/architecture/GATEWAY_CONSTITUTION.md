@@ -67,6 +67,8 @@ property and at most one active primary property per employee; applications
 must also validate these rules and translate constraint races safely.
 # Operations-home principles
 
+Overview permissions answer “What is happening?” Workflow permissions answer “What can I do about it?” Reporting visibility never grants workflow authority. Reporting views reuse authoritative business records and append-only history rather than copying workflow data.
+
 Gateway home pages prioritize immediate operational access over executive
 analytics. Tool cards represent plausible, named business capabilities and
 must never advertise unavailable functionality through dead links. Visibility

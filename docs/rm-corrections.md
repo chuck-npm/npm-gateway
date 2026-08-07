@@ -8,6 +8,8 @@ The lifecycle is `Pending Review` to `Approved`, `Denied`, or `More Information 
 
 Corporate access requires explicit effective `rm-corrections` category membership. Operations, Marketing, Finance, employee class, title, Admin, and Property Access do not imply it. Community routes separately require current Property Access and derive the property from the route.
 
+Operations Overview provides separate read-only reporting for users with effective `operations` access. It reads these same authoritative request and history records but confers no processing authority and generates no workflow activity.
+
 Reviewer delivery uses `RM_CORRECTIONS_REVIEWER_EMAIL`. Automated and development delivery must use `RM_CORRECTIONS_TEST_MODE=true` and `RM_CORRECTIONS_TEST_EMAIL`; this fail-closed override prevents delivery to production recipients. Decision mail uses the authoritative property `manager_email`, subject to the same test override.
 
 Audit events contain public identifiers, event type, actor public ID, and status transition only. Tenant name, request text, comments, responses, email addresses, raw POST data, and session data are excluded. Business history retains required narrative.
