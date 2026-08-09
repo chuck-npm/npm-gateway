@@ -806,6 +806,32 @@ body {
 @media (min-width:992px) and (max-width:1199.98px) { .gateway-tool-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 @media (prefers-reduced-motion:reduce) { .gateway-tool-card--enabled { transition:none; } }
 
+.gateway-print-only { display:none; }
+.gateway-rm-audit-record__heading { min-width:0;overflow-wrap:anywhere; }
+.gateway-rm-audit-record__actions { flex:0 0 auto; }
+@media print {
+    @page { margin:.6in; }
+    html,body { color:#111!important;background:#fff!important;font-size:10.5pt; }
+    body { margin:0; }
+    .gateway-app-header,.gateway-footer,.gateway-skip-link,.gateway-processing-overlay,.gateway-rm-audit-report .gateway-breadcrumb,.gateway-rm-audit-report .gateway-page-header,.gateway-rm-audit-filters,.gateway-rm-audit-report-actions,.gateway-rm-audit-view { display:none!important; }
+    .gateway-main,.gateway-main>.container { width:100%;max-width:none;margin:0;padding:0; }
+    .gateway-print-only { display:block!important; }
+    .gateway-rm-audit-print-header { margin-bottom:1rem;border-bottom:2px solid #222; }
+    .gateway-rm-audit-print-header p { margin:0 0 .35rem;font-size:9pt; }
+    .gateway-rm-audit-print-header h1 { margin:0 0 .6rem;font-size:20pt; }
+    .gateway-rm-audit-print-header dl { display:grid;grid-template-columns:max-content 1fr;gap:.15rem .65rem;margin:0 0 .75rem; }
+    .gateway-rm-audit-print-header dt,.gateway-rm-audit-print-header dd { margin:0; }
+    .gateway-rm-audit-report .gateway-review-summary { margin-bottom:1rem!important; }
+    .gateway-rm-audit-report .gateway-status { color:#111!important;background:#fff!important;border:1px solid #555!important;box-shadow:none!important; }
+    .gateway-rm-audit-property { border:1px solid #777!important;box-shadow:none!important;break-after:auto; }
+    .gateway-rm-audit-property .card-header { color:#111!important;background:#fff!important;border-bottom:1px solid #777!important;break-after:avoid-page; }
+    .gateway-rm-audit-record { color:#111!important;background:#fff!important;border-color:#aaa!important;orphans:3;widows:3; }
+    .gateway-rm-audit-record__heading { color:#111!important;break-after:avoid-page; }
+    .gateway-rm-audit-report .text-body-secondary { color:#333!important; }
+    .gateway-rm-audit-report .gateway-rich-content { color:#111!important; }
+    .gateway-rm-audit-report a::after { content:none!important; }
+}
+
 /* Company notice composer */
 .gateway-company-notice-editor { display:block; }
 .gateway-company-notice-editor .ql-container { height:auto;overflow:visible; }

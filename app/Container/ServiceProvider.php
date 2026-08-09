@@ -146,6 +146,9 @@ use NpmGateway\Services\RmCorrectionValidator;
 use NpmGateway\Services\RmCorrectionQueryService;
 use NpmGateway\Services\RmCorrectionService;
 use NpmGateway\Services\OperationsRmCorrectionOverviewService;
+use NpmGateway\Services\OperationsRmAuditOverviewService;
+use NpmGateway\Contracts\GatewayPdfRendererInterface;
+use NpmGateway\Services\Pdf\DompdfGatewayPdfRenderer;
 use NpmGateway\Notifications\RmCorrectionEmailSender;
 use NpmGateway\Repositories\RmAuditRepository;
 use NpmGateway\Services\RmAuditRichTextSanitizer;
@@ -288,6 +291,8 @@ final class ServiceProvider
         $container->set(RmCorrectionValidator::class,static fn():RmCorrectionValidator=>new RmCorrectionValidator());
         $container->set(RmCorrectionQueryService::class,static fn(Container $c):RmCorrectionQueryService=>new RmCorrectionQueryService($c->get(RmCorrectionRepository::class)));
         $container->set(OperationsRmCorrectionOverviewService::class,static fn(Container $c):OperationsRmCorrectionOverviewService=>new OperationsRmCorrectionOverviewService($c->get(RmCorrectionRepository::class)));
+        $container->set(OperationsRmAuditOverviewService::class,static fn(Container $c):OperationsRmAuditOverviewService=>new OperationsRmAuditOverviewService($c->get(RmAuditRepository::class)));
+        $container->set(GatewayPdfRendererInterface::class,static fn(Container $c):GatewayPdfRendererInterface=>new DompdfGatewayPdfRenderer($root.'/resources/views/pdf'));
         $container->set(RmCorrectionEmailSender::class,static fn(Container $c):RmCorrectionEmailSender=>new RmCorrectionEmailSender((array)$c->get('config.rm-corrections'),null,$c->get(GatewayEmailRenderer::class)));
         $container->set(RmCorrectionService::class,static fn(Container $c):RmCorrectionService=>new RmCorrectionService($c->get(RmCorrectionRepository::class),$c->get(RmCorrectionValidator::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class),$c->get(RmCorrectionEmailSender::class),$c->get(PropertyAccessService::class)));
         $container->set(RmAuditRichTextSanitizer::class,static fn():RmAuditRichTextSanitizer=>new RmAuditRichTextSanitizer());

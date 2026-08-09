@@ -12,7 +12,7 @@ $eventLabels = ['submitted' => 'Submitted', 'completed' => 'Completed', 'returne
 <dt class="col-sm-4">Unit</dt><dd class="col-sm-8"><?=$e($audit['unit_identifier'])?></dd>
 <dt class="col-sm-4">Submitted By</dt><dd class="col-sm-8"><?=$e($audit['submitted_by_name'])?></dd>
 <dt class="col-sm-4">Submitted At</dt><dd class="col-sm-8"><?=$e(GatewayDateTimeFormatter::format($audit['submitted_at']))?></dd>
-<dt class="col-sm-4">Current Status</dt><dd class="col-sm-8"><?=$e(RmAuditStatus::LABELS[$audit['status']])?></dd>
+<dt class="col-sm-4"><?=$e($auditStatusHeading??'Current Status')?></dt><dd class="col-sm-8"><?=$e($auditStatusLabel??RmAuditStatus::LABELS[$audit['status']])?></dd>
 <dt class="col-sm-4">Last Updated</dt><dd class="col-sm-8"><?=$e(GatewayDateTimeFormatter::format($audit['updated_at']))?></dd>
 <?php if ($audit['completed_at']): ?>
 <dt class="col-sm-4">Completed By</dt><dd class="col-sm-8"><?=$e($audit['completed_by_name'])?></dd>

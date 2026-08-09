@@ -23,5 +23,6 @@ $processingOverlayVersion = is_file($processingOverlayPath) ? (string) filemtime
 <?php if(!empty($companyNoticeDraftAssets)): ?><script type="module" src="/assets/js/company-notice-draft-discard.js"></script><?php endif; ?>
 <?php if(!empty($creditCardPurchaseAssets)): ?><script type="module" src="/assets/js/credit-card-receipt-documentation.js"></script><?php endif; ?>
 <?php if(!empty($documentViewerAssets)): ?><script type="module" src="/assets/js/document-viewer.js"></script><?php endif; ?>
+<?php if(!empty($rmAuditReportAssets)): ?><script type="module" src="/assets/js/rm-audit-report.js"></script><?php endif; ?>
 </body>
 </html>
