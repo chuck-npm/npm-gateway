@@ -1,0 +1,1 @@
+<?php declare(strict_types=1);namespace NpmGateway\Database\Migration;final class SupplyOrdersSchema{public const MIGRATION='202608090020_supply_orders';public const COLUMNS=['id','public_id','property_id','submitted_by_user_id','request_html','request_text','submitted_at'];}

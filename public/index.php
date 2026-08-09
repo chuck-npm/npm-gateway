@@ -78,6 +78,9 @@ use NpmGateway\Services\OperationsRmCorrectionOverviewService;
 use NpmGateway\Services\OperationsRmAuditOverviewService;
 use NpmGateway\Contracts\GatewayPdfRendererInterface;
 use NpmGateway\Http\Controllers\OperationsRmAuditPdfController;
+use NpmGateway\Http\Controllers\SupplyOrderController;
+use NpmGateway\Repositories\SupplyOrderRepository;
+use NpmGateway\Services\SupplyOrderService;
 
 $application=require dirname(__DIR__).'/bootstrap/app.php';$root=$application['root'];$environment=(string)$application['config']['app']['environment'];
 $path=parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH);$path=is_string($path)?rtrim($path,'/'):'/';$path=$path===''?'/':$path;
@@ -115,7 +118,8 @@ $operationsOverview=new OperationsOverviewController($container->get(CorporateAc
 $rmAudits=new \NpmGateway\Http\Controllers\RmAuditController($container->get(\NpmGateway\Services\CommunityActionContextResolver::class),$container->get(\NpmGateway\Services\RmAuditQueryService::class),$container->get(\NpmGateway\Services\RmAuditService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
 $corporateRmAudits=new \NpmGateway\Http\Controllers\CorporateRmAuditController($container->get(CorporateAccessService::class),$container->get(\NpmGateway\Services\RmAuditQueryService::class),$container->get(\NpmGateway\Services\RmAuditService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
 $operationsRmAuditPdf=new OperationsRmAuditPdfController($container->get(CorporateAccessService::class),$container->get(OperationsRmAuditOverviewService::class),$container->get(GatewayPdfRendererInterface::class),$container->get(ClockInterface::class),$views);
-$kernel=new WebKernel($authentication,new DashboardController($csrf,$container->get(DashboardHomeService::class),$views,$container->get(NotificationQueryService::class)),new RequireAuthenticationMiddleware($container->get(SessionService::class),$cookie,$loginReturns),$employees,$properties,$hr,$hrEmployees,$admin,$notificationController,$companyNoticeController,new StorageController($container->get(PublishedStorageService::class)),$corporate,$emergencyContact,$hrEmergencyContacts,$managerMaintenanceEmergencyContact,$communityActions,$applicationReviews,$corporateApplicationReviews,$creditCardPurchases,$corporateCreditCardPurchases,$rmCorrections,$corporateRmCorrections,$operationsOverview,$rmAudits,$corporateRmAudits,$operationsRmAuditPdf);
+$supplyOrders=new SupplyOrderController($container->get(CommunityActionContextResolver::class),$container->get(SupplyOrderService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
+$kernel=new WebKernel($authentication,new DashboardController($csrf,$container->get(DashboardHomeService::class),$views,$container->get(NotificationQueryService::class)),new RequireAuthenticationMiddleware($container->get(SessionService::class),$cookie,$loginReturns),$employees,$properties,$hr,$hrEmployees,$admin,$notificationController,$companyNoticeController,new StorageController($container->get(PublishedStorageService::class)),$corporate,$emergencyContact,$hrEmergencyContacts,$managerMaintenanceEmergencyContact,$communityActions,$applicationReviews,$corporateApplicationReviews,$creditCardPurchases,$corporateCreditCardPurchases,$rmCorrections,$corporateRmCorrections,$operationsOverview,$rmAudits,$corporateRmAudits,$operationsRmAuditPdf,$supplyOrders);
 $request=new Request(strtoupper((string)($_SERVER['REQUEST_METHOD']??'GET')),$path,$_POST,array_map('strval',$_COOKIE),array_map('strval',$_SERVER),array_map('strval',$_GET),$_FILES);
 $response=$kernel->handle($request,$container->get(ClockInterface::class)->now());http_response_code($response->status);
 foreach($response->headers as $name=>$value)header($name.': '.$value);

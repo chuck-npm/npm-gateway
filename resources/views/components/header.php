@@ -17,7 +17,7 @@ $gatewayCssVersion=is_file($gatewayCssPath)?(string)filemtime($gatewayCssPath):'
           rel="stylesheet"
           integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
           crossorigin="anonymous">
-    <?php if(!empty($quillAssets)||!empty($rmAuditAssets)): ?><link href="/assets/vendor/quill/2.0.3/quill.snow.css" rel="stylesheet"><?php endif; ?>
+    <?php if(!empty($quillAssets)||!empty($rmAuditAssets)||!empty($supplyOrderAssets)): ?><link href="/assets/vendor/quill/2.0.3/quill.snow.css" rel="stylesheet"><?php endif; ?>
     <link href="/assets/css/gateway.css?v=<?= rawurlencode($gatewayCssVersion) ?>" rel="stylesheet">
 </head>
 <body class="gateway-shell">

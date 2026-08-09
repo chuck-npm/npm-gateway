@@ -13,7 +13,7 @@ final class CommunityActionProvider
         ['key'=>'request-appliances','route_segment'=>'request-appliances','label'=>'Request Appliances','description'=>'Request appliances for community homes.','order'=>5,'implemented'=>false],
         ['key'=>'appliance-distribution','route_segment'=>'appliance-distribution','label'=>'Appliance Distribution','description'=>'Record and manage appliance distribution.','order'=>6,'implemented'=>false],
         ['key'=>'hvac-service-request','route_segment'=>'hvac-service-requests','label'=>'HVAC Service Request','description'=>'Submit HVAC service and repair requests.','order'=>7,'implemented'=>false],
-        ['key'=>'order-supplies','route_segment'=>'order-supplies','label'=>'Order Supplies','description'=>'Request supplies for the community.','order'=>8,'implemented'=>false],
+        ['key'=>'order-supplies','route_segment'=>'supply-orders','label'=>'Order Supplies','description'=>'Request supplies for the community.','order'=>8,'implemented'=>true],
         ['key'=>'eviction-checks','route_segment'=>'eviction-checks','label'=>'Eviction Checks','description'=>'Submit and review eviction-related checks.','order'=>9,'implemented'=>false],
         ['key'=>'rm-audits','route_segment'=>'rm-audits','label'=>'RM Audits','description'=>'Review and complete Rent Manager audit tasks.','order'=>10,'implemented'=>true],
     ];

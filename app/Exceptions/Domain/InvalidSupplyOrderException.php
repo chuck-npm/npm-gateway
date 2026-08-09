@@ -1,0 +1,1 @@
+<?php declare(strict_types=1);namespace NpmGateway\Exceptions\Domain;final class InvalidSupplyOrderException extends \InvalidArgumentException{public function __construct(public readonly array$errors,public readonly array$input){parent::__construct('Invalid supply order.');}}

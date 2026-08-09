@@ -866,6 +866,8 @@ body {
 .gateway-company-notice-editor .ql-editor img[data-gateway-image-selected="true"] { outline: 2px solid #0b5f7a; outline-offset: 3px; }
 .gateway-company-notice-editor .ql-editor img[data-preview-state="failed"] { outline: 2px solid #8a6d3b; opacity: .55; }
 .gateway-company-notice-editor { position:relative; }
+.gateway-supply-order-form #supply-order-editor.gateway-supply-order-form__editor.ql-container > .ql-editor[contenteditable="true"] { min-height:17rem;font-size:1.05rem;line-height:1.6;overflow-wrap:anywhere; }
+.gateway-supply-order-form__editor { margin-bottom:1rem; }
 .gateway-image-resize-handle { position:absolute;z-index:5;width:1.25rem;height:1.25rem;border:2px solid #fff;border-radius:50%;background:#0b5f7a;cursor:nwse-resize;touch-action:none;transform:translate(-50%,-50%); }
 .gateway-image-resize-controls { display:flex;align-items:center;gap:.75rem;margin-top:.75rem;max-width:32rem; }
 .gateway-image-resize-controls[hidden] { display:none; }

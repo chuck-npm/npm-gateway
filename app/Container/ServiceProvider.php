@@ -149,6 +149,10 @@ use NpmGateway\Services\OperationsRmCorrectionOverviewService;
 use NpmGateway\Services\OperationsRmAuditOverviewService;
 use NpmGateway\Contracts\GatewayPdfRendererInterface;
 use NpmGateway\Services\Pdf\DompdfGatewayPdfRenderer;
+use NpmGateway\Repositories\SupplyOrderRepository;
+use NpmGateway\Services\SupplyOrderValidator;
+use NpmGateway\Services\SupplyOrderService;
+use NpmGateway\Notifications\SupplyOrderEmailSender;
 use NpmGateway\Notifications\RmCorrectionEmailSender;
 use NpmGateway\Repositories\RmAuditRepository;
 use NpmGateway\Services\RmAuditRichTextSanitizer;
@@ -172,6 +176,7 @@ final class ServiceProvider
         $applicationReviews = require $root . '/config/application-reviews.php';
         $rmCorrections = require $root . '/config/rm-corrections.php';
         $rmAudits = require $root . '/config/rm-audits.php';
+        $supplyOrders = require $root . '/config/supply-orders.php';
         /** @var AuthenticationConfig $authentication */
         $authentication = require $root . '/config/authentication.php';
         $container->instance('config.notification', $notice);
@@ -182,6 +187,7 @@ final class ServiceProvider
         $container->instance('config.application-reviews',$applicationReviews);
         $container->instance('config.rm-corrections',$rmCorrections);
         $container->instance('config.rm-audits',$rmAudits);
+        $container->instance('config.supply-orders',$supplyOrders);
         $container->instance(AuthenticationConfig::class, $authentication);
         $container->set(mysqli::class, static fn (): mysqli => MySqlConnectionFactory::connect(DatabaseProfiles::load('application', $root)));
         $container->set(PasswordGeneratorInterface::class, static fn (): PasswordGeneratorInterface => new SecurePasswordGenerator());
@@ -300,6 +306,10 @@ final class ServiceProvider
         $container->set(RmAuditQueryService::class,static fn(Container $c):RmAuditQueryService=>new RmAuditQueryService($c->get(RmAuditRepository::class)));
         $container->set(RmAuditEmailSender::class,static fn(Container $c):RmAuditEmailSender=>new RmAuditEmailSender((array)$c->get('config.rm-audits'),null,$c->get(GatewayEmailRenderer::class)));
         $container->set(RmAuditService::class,static fn(Container $c):RmAuditService=>new RmAuditService($c->get(RmAuditRepository::class),$c->get(RmAuditValidator::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class),$c->get(RmAuditEmailSender::class),$c->get(PropertyAccessService::class)));
+        $container->set(SupplyOrderRepository::class,static fn(Container$c):SupplyOrderRepository=>new SupplyOrderRepository($c->get(mysqli::class)));
+        $container->set(SupplyOrderValidator::class,static fn(Container$c):SupplyOrderValidator=>new SupplyOrderValidator($c->get(RmAuditRichTextSanitizer::class)));
+        $container->set(SupplyOrderEmailSender::class,static fn(Container$c):SupplyOrderEmailSender=>new SupplyOrderEmailSender((array)$c->get('config.supply-orders'),null,$c->get(GatewayEmailRenderer::class)));
+        $container->set(SupplyOrderService::class,static fn(Container$c):SupplyOrderService=>new SupplyOrderService($c->get(SupplyOrderRepository::class),$c->get(SupplyOrderValidator::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class),$c->get(SupplyOrderEmailSender::class)));
         $container->set(CreditCardPurchaseValidator::class,static fn():CreditCardPurchaseValidator=>new CreditCardPurchaseValidator());
         $container->set(CreditCardReceiptTestCleanupService::class,static fn(Container $c):CreditCardReceiptTestCleanupService=>new CreditCardReceiptTestCleanupService($c->get(StorageConfiguration::class),$c->get(StorageAdapterInterface::class),$c->get(StorageObjectRepository::class)));
         $container->set(CreditCardPurchaseService::class,static fn(Container $c):CreditCardPurchaseService=>new CreditCardPurchaseService($c->get(CreditCardPurchaseRepository::class),$c->get(CreditCardPurchaseValidator::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class),$c->get(PropertyAccessService::class),$c->get(GatewayStorageService::class),$c->get(StorageObjectStoreInterface::class)));
