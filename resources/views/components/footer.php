@@ -5,6 +5,8 @@ declare(strict_types=1);
 $footerText = isset($footerText) ? (string) $footerText : 'NPM Gateway';
 $processingOverlayPath = dirname(__DIR__, 3) . '/public/assets/js/processing-overlay.js';
 $processingOverlayVersion = is_file($processingOverlayPath) ? (string) filemtime($processingOverlayPath) : '1';
+$flyerUploadPath = dirname(__DIR__, 3) . '/public/assets/js/marketing-flyer-upload.js';
+$flyerUploadVersion = is_file($flyerUploadPath) ? (string) filemtime($flyerUploadPath) : '1';
 ?>
 <footer class="gateway-footer">
     <div class="container gateway-footer__inner">
@@ -25,5 +27,6 @@ $processingOverlayVersion = is_file($processingOverlayPath) ? (string) filemtime
 <?php if(!empty($creditCardPurchaseAssets)): ?><script type="module" src="/assets/js/credit-card-receipt-documentation.js"></script><?php endif; ?>
 <?php if(!empty($documentViewerAssets)): ?><script type="module" src="/assets/js/document-viewer.js"></script><?php endif; ?>
 <?php if(!empty($rmAuditReportAssets)): ?><script type="module" src="/assets/js/rm-audit-report.js"></script><?php endif; ?>
+<?php if(!empty($flyerUploadAssets)): ?><script src="/assets/js/marketing-flyer-upload.js?v=<?= rawurlencode($flyerUploadVersion) ?>" defer></script><?php endif; ?>
 </body>
 </html>

@@ -160,6 +160,12 @@ use NpmGateway\Services\RmAuditValidator;
 use NpmGateway\Services\RmAuditQueryService;
 use NpmGateway\Services\RmAuditService;
 use NpmGateway\Notifications\RmAuditEmailSender;
+use NpmGateway\Repositories\MarketingFlyerRepository;
+use NpmGateway\Repositories\MarketingFlyerNotificationOutboxRepository;
+use NpmGateway\Services\{MarketingFlyerService,MarketingFlyerImageProcessor,MarketingFlyerMonthOptions};
+use NpmGateway\Services\{MarketingFlyerNotificationWorker,MarketingFlyerNotificationHealthService};
+use NpmGateway\Contracts\MarketingFlyerNotifierInterface;
+use NpmGateway\Notifications\{MarketingFlyerEmailSender,DisabledMarketingFlyerNotifier};
 final class ServiceProvider
 {
     /** @param array<string, mixed> $application */
@@ -177,6 +183,7 @@ final class ServiceProvider
         $rmCorrections = require $root . '/config/rm-corrections.php';
         $rmAudits = require $root . '/config/rm-audits.php';
         $supplyOrders = require $root . '/config/supply-orders.php';
+        $marketingFlyers = require $root . '/config/marketing-flyers.php';
         /** @var AuthenticationConfig $authentication */
         $authentication = require $root . '/config/authentication.php';
         $container->instance('config.notification', $notice);
@@ -188,6 +195,7 @@ final class ServiceProvider
         $container->instance('config.rm-corrections',$rmCorrections);
         $container->instance('config.rm-audits',$rmAudits);
         $container->instance('config.supply-orders',$supplyOrders);
+        $container->instance('config.marketing-flyers',$marketingFlyers);
         $container->instance(AuthenticationConfig::class, $authentication);
         $container->set(mysqli::class, static fn (): mysqli => MySqlConnectionFactory::connect(DatabaseProfiles::load('application', $root)));
         $container->set(PasswordGeneratorInterface::class, static fn (): PasswordGeneratorInterface => new SecurePasswordGenerator());
@@ -237,6 +245,8 @@ final class ServiceProvider
         $container->set(RmCorrectionRepository::class,static fn(Container $c):RmCorrectionRepository=>new RmCorrectionRepository($c->get(mysqli::class)));
         $container->set(RmAuditRepository::class,static fn(Container $c):RmAuditRepository=>new RmAuditRepository($c->get(mysqli::class)));
         $container->set(CreditCardPurchaseRepository::class,static fn(Container $c):CreditCardPurchaseRepository=>new CreditCardPurchaseRepository($c->get(mysqli::class)));
+        $container->set(MarketingFlyerRepository::class,static fn(Container $c):MarketingFlyerRepository=>new MarketingFlyerRepository($c->get(mysqli::class)));
+        $container->set(MarketingFlyerNotificationOutboxRepository::class,static fn(Container $c):MarketingFlyerNotificationOutboxRepository=>new MarketingFlyerNotificationOutboxRepository($c->get(mysqli::class)));
         $container->set(PropertyAccessStoreInterface::class,static fn(Container $c):PropertyAccessStoreInterface=>$c->get(PropertyAccessRepository::class));
         $container->set(PropertyStoreInterface::class,static fn(Container $c):PropertyStoreInterface=>$c->get(PropertyRepository::class));
         $container->set(PropertyDirectoryStoreInterface::class,static fn(Container $c):PropertyDirectoryStoreInterface=>$c->get(PropertyRepository::class));
@@ -313,6 +323,13 @@ final class ServiceProvider
         $container->set(CreditCardPurchaseValidator::class,static fn():CreditCardPurchaseValidator=>new CreditCardPurchaseValidator());
         $container->set(CreditCardReceiptTestCleanupService::class,static fn(Container $c):CreditCardReceiptTestCleanupService=>new CreditCardReceiptTestCleanupService($c->get(StorageConfiguration::class),$c->get(StorageAdapterInterface::class),$c->get(StorageObjectRepository::class)));
         $container->set(CreditCardPurchaseService::class,static fn(Container $c):CreditCardPurchaseService=>new CreditCardPurchaseService($c->get(CreditCardPurchaseRepository::class),$c->get(CreditCardPurchaseValidator::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class),$c->get(PropertyAccessService::class),$c->get(GatewayStorageService::class),$c->get(StorageObjectStoreInterface::class)));
+        $container->set(MarketingFlyerImageProcessor::class,static fn():MarketingFlyerImageProcessor=>new MarketingFlyerImageProcessor());
+        $container->set(MarketingFlyerMonthOptions::class,static fn():MarketingFlyerMonthOptions=>new MarketingFlyerMonthOptions());
+        $container->set(MarketingFlyerNotifierInterface::class,static function(Container$c):MarketingFlyerNotifierInterface{try{return new MarketingFlyerEmailSender((array)$c->get('config.marketing-flyers'),null,$c->get(GatewayEmailRenderer::class));}catch(\Throwable){return new DisabledMarketingFlyerNotifier();}});
+        $container->set(MarketingFlyerService::class,static fn(Container$c):MarketingFlyerService=>new MarketingFlyerService($c->get(MarketingFlyerRepository::class),$c->get(MarketingFlyerImageProcessor::class),$c->get(MarketingFlyerMonthOptions::class),$c->get(StorageAdapterInterface::class),$c->get(StorageConfiguration::class),$c->get(MarketingFlyerNotificationOutboxRepository::class),(array)$c->get('config.marketing-flyers'),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class)));
+        $container->set(MarketingFlyerEmailSender::class,static fn(Container$c):MarketingFlyerEmailSender=>new MarketingFlyerEmailSender((array)$c->get('config.marketing-flyers'),null,$c->get(GatewayEmailRenderer::class)));
+        $container->set(MarketingFlyerNotificationWorker::class,static fn(Container$c):MarketingFlyerNotificationWorker=>new MarketingFlyerNotificationWorker($c->get(MarketingFlyerNotificationOutboxRepository::class),$c->get(MarketingFlyerEmailSender::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class)));
+        $container->set(MarketingFlyerNotificationHealthService::class,static fn(Container$c):MarketingFlyerNotificationHealthService=>new MarketingFlyerNotificationHealthService($c->get(MarketingFlyerNotificationOutboxRepository::class),$c->get(ClockInterface::class)));
         $container->set(ProtectedPrincipalService::class,static fn(Container $c):ProtectedPrincipalService=>new ProtectedPrincipalService($c->get(ProtectedPrincipalConfig::class),$c->get(CategoryAccessStoreInterface::class),$c->get(AuditService::class),$c->get(ClockInterface::class)));
         $container->set(CategoryAccessAdministrationService::class,static fn(Container $c):CategoryAccessAdministrationService=>new CategoryAccessAdministrationService($c->get(CategoryAccessStoreInterface::class),$c->get(InitializationTransactionInterface::class),$c->get(AuditService::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),(array)$c->get('config.corporate-access')['categories'],$c->get(ProtectedPrincipalService::class)));
         $container->set(CategoryAccessPayloadParser::class,static fn(Container $c):CategoryAccessPayloadParser=>new CategoryAccessPayloadParser((array)$c->get('config.corporate-access')['categories']));

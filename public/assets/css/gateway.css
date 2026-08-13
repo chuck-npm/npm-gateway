@@ -856,6 +856,29 @@ body {
 @media (max-width:575.98px) { .gateway-upload-totals { flex-direction:column; }.gateway-upload-list { min-width:42rem; } }
 .gateway-company-notice-editor .ql-editor img[data-storage-object-public-id],
 .gateway-card__body img[data-storage-object-public-id] { max-width: 100%; height: auto; }
+
+/* Marketing Flyers */
+.gateway-flyer-filters { margin-bottom:1.5rem; }
+.gateway-flyer-filters__action { display:flex;align-items:flex-end; }
+.gateway-flyer-filters__action .btn { width:100%; }
+.gateway-flyer-row-actions { display:flex;flex-wrap:wrap;align-items:center;gap:.35rem .75rem; }
+.gateway-flyer-row-actions form,.gateway-flyer-detail__actions form { margin:0; }
+.gateway-link-button { padding:0;border:0;background:none;color:var(--gateway-navy);font:inherit;text-decoration:underline; }
+.gateway-link-button--danger { color:#b42318; }
+.gateway-button--danger { color:#b42318;background:var(--gateway-surface);border-color:#b42318; }
+.gateway-button--danger:hover,.gateway-button--danger:active { color:#fff;background:#b42318;border-color:#b42318; }
+.gateway-flyer-progress { display:grid;gap:.5rem;margin-top:1.5rem;padding:1rem;border:1px solid var(--gateway-border);border-radius:.5rem;background:var(--gateway-background); }
+.gateway-flyer-progress__track { width:100%;height:.65rem;overflow:hidden;border-radius:999px;background:#dfe5eb; }
+.gateway-flyer-progress__bar { width:0;height:100%;border-radius:inherit;background:var(--gateway-blue);transition:width .15s ease-out; }
+.gateway-flyer-progress__status { font-weight:600; }
+.gateway-flyer-progress--error { color:#842029;border-color:#d99aa0;background:#f8d7da; }
+.gateway-flyer-preview { display:flex;justify-content:center;padding:1rem;border:1px solid var(--gateway-border);border-radius:.5rem;background:var(--gateway-background); }
+.gateway-flyer-preview img { display:block;max-width:100%;height:auto; }
+.gateway-flyer-detail__fields dt,.gateway-flyer-detail__fields dd { padding-block:.35rem;margin-bottom:0; }
+.gateway-flyer-detail__actions { display:flex;flex-wrap:wrap;gap:.75rem;margin-top:1.5rem; }
+.gateway-flyer-back-link { display:inline-block;margin-top:1.5rem; }
+.gateway-flyer-fixed-value { margin:0;padding:.5rem .75rem;border:1px solid var(--gateway-border);border-radius:.375rem;background:var(--gateway-background); }
+@media (max-width:767.98px) { .gateway-flyer-filters__action { align-items:stretch; }.gateway-flyer-detail__actions { align-items:stretch;flex-direction:column; }.gateway-flyer-detail__actions .btn { width:100%; } }
 .gateway-company-notice-editor .ql-editor img[data-gateway-image-align="left"],.gateway-notice-rich-body img[data-gateway-image-align="left"] { display:block;margin-left:0;margin-right:auto; }
 .gateway-company-notice-editor .ql-editor img[data-gateway-image-align="center"],.gateway-notice-rich-body img[data-gateway-image-align="center"] { display:block;margin-left:auto;margin-right:auto; }
 .gateway-company-notice-editor .ql-editor img[data-gateway-image-align="right"],.gateway-notice-rich-body img[data-gateway-image-align="right"] { display:block;margin-left:auto;margin-right:0; }

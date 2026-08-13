@@ -1,0 +1,1 @@
+<?php declare(strict_types=1);$env=static fn(string$n):string=>(string)($_ENV[$n]??$_SERVER[$n]??getenv($n)?:'');return['test_mode'=>filter_var($env('MARKETING_FLYERS_TEST_MODE'),FILTER_VALIDATE_BOOL),'test_email'=>trim($env('MARKETING_FLYERS_TEST_EMAIL')),'app_url'=>rtrim($env('APP_URL'),'/'),'smtp'=>require __DIR__.'/hr-employee-notification.php'];

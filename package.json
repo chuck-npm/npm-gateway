@@ -2,7 +2,8 @@
   "name": "npm-gateway-assets",
   "private": true,
   "scripts": {
-    "build:vendor": "node scripts/copy-quill-assets.mjs"
+    "build:vendor": "node scripts/copy-quill-assets.mjs",
+    "test": "node tests/JavaScript/marketing-flyer-upload.test.mjs"
   },
   "devDependencies": {
     "quill": "2.0.3"

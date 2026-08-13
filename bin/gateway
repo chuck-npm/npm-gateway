@@ -19,6 +19,7 @@ use NpmGateway\Services\CategoryAccessBackfillService;
 use NpmGateway\Services\OperationsAccessBackfillService;
 use NpmGateway\Console\OperationsAccessBackfillCommand;
 use NpmGateway\Console\ProtectedPrincipalCheckCommand;
+use NpmGateway\Console\{MarketingFlyerNotificationWorkerCommand,MarketingFlyerNotificationHealthCommand};
 
 $projectRoot = dirname(__DIR__);
 
@@ -46,6 +47,8 @@ $help = implode(PHP_EOL, [
     '  credit-card-receipts:test-cleanup --confirm',
     '  protected-principal:check',
     '  protected-principal:repair --confirm',
+    '  marketing-flyer-notifications:work [batch-size]',
+    '  marketing-flyer-notifications:check',
 ]) . PHP_EOL;
 
 if ($command === '' || in_array($command, ['help', '--help', '-h'], true)) {
@@ -122,6 +125,9 @@ if($command==='operations-access:backfill'){
 }
 if($command==='protected-principal:check'){
     $container=ServiceProvider::build($application);try{$result=(new ProtectedPrincipalCheckCommand($container->get(\NpmGateway\Services\ProtectedPrincipalService::class)))->run(array_slice($arguments,1));fwrite(STDOUT,$result['stdout']);fwrite(STDERR,$result['stderr']);exit($result['exit_code']);}finally{$container->get(mysqli::class)->close();}
+}
+if(in_array($command,['marketing-flyer-notifications:work','marketing-flyer-notifications:check'],true)){
+    $container=ServiceProvider::build($application);try{$handler=$command==='marketing-flyer-notifications:work'?new MarketingFlyerNotificationWorkerCommand($container->get(\NpmGateway\Services\MarketingFlyerNotificationWorker::class)):new MarketingFlyerNotificationHealthCommand($container->get(\NpmGateway\Services\MarketingFlyerNotificationHealthService::class));$result=$handler->run(array_slice($arguments,1));fwrite(STDOUT,$result['stdout']);fwrite(STDERR,$result['stderr']);exit($result['exit_code']);}finally{$container->get(mysqli::class)->close();}
 }
 if($command==='protected-principal:repair'){
     if(array_slice($arguments,1)!==['--confirm']){fwrite(STDERR,"Usage: protected-principal:repair --confirm\n");exit(2);}$profile=DatabaseProfiles::load('migration',$application['root']);$db=null;try{$corporate=require $projectRoot.'/config/corporate-access.php';$raw=require $projectRoot.'/config/protected-principal.php';$config=\NpmGateway\Configuration\ProtectedPrincipalConfig::fromArray($raw,(array)$corporate['categories']);$db=\NpmGateway\Database\MySqlConnectionFactory::connect($profile);$ids=new \NpmGateway\Support\PublicIdGenerator();$clock=new \NpmGateway\Support\SystemClock(new DateTimeZone((string)$application['config']['app']['timezone']));$audits=new \NpmGateway\Services\AuditService(new \NpmGateway\Repositories\AuditRepository($db),$ids);$maintenance=new \NpmGateway\Services\ProtectedPrincipalMaintenanceService($db,$config,$audits,$ids,$clock);$proposal=$maintenance->proposedRepairs();fwrite(STDOUT,"Proposed protected-principal repairs: ".($proposal['repairs']===[]?'none':implode(', ',$proposal['repairs'])).".\n");$result=$maintenance->repair();fwrite(STDOUT,$result['repairs']===[]?"Protected principal already healthy; no changes made.\n":"Protected principal baseline repaired.\n");exit(0);}catch(Throwable $e){fwrite(STDERR,str_replace(["\r","\n"],' ',$e->getMessage())."\n");exit(1);}finally{if($db instanceof mysqli)$db->close();}

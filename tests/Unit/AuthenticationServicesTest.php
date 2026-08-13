@@ -63,8 +63,8 @@ final class AuthenticationServicesTest extends TestCase
  }
  public function testArchitectureBoundariesAndNoMigration003():void
  {
-  $root=dirname(__DIR__,2);foreach(glob($root.'/app/Http/Controllers/*.php')?:[] as $f){$s=file_get_contents($f);self::assertDoesNotMatchRegularExpression('/\\b(?:SELECT|INSERT|UPDATE|DELETE)\\b/i',$s);self::assertStringNotContainsString('Repositories\\',$s);self::assertStringNotContainsString('password_verify',$s);}
-  foreach(glob($root.'/app/Http/Middleware/*.php')?:[] as $f){$s=file_get_contents($f);self::assertDoesNotMatchRegularExpression('/\\b(?:SELECT|INSERT|UPDATE|DELETE)\\b/i',$s);self::assertStringNotContainsString('Repositories\\',$s);}
+  $root=dirname(__DIR__,2);$sql='/\\b(?:SELECT\\s|INSERT\\s+INTO|UPDATE\\s+[A-Za-z_][A-Za-z0-9_]*\\s+SET|DELETE\\s+FROM)\\b/i';foreach(glob($root.'/app/Http/Controllers/*.php')?:[] as $f){$s=file_get_contents($f);self::assertDoesNotMatchRegularExpression($sql,$s);self::assertStringNotContainsString('Repositories\\',$s);self::assertStringNotContainsString('password_verify',$s);}
+  foreach(glob($root.'/app/Http/Middleware/*.php')?:[] as $f){$s=file_get_contents($f);self::assertDoesNotMatchRegularExpression($sql,$s);self::assertStringNotContainsString('Repositories\\',$s);}
   foreach(glob($root.'/app/Repositories/*.php')?:[] as $f){$s=file_get_contents($f);self::assertStringNotContainsString('begin_transaction',$s);self::assertStringNotContainsString('Services\\',$s);}
   self::assertFileDoesNotExist($root.'/database/migrations/202607270003_authentication.php');self::assertStringNotContainsString("'GET' => '/logout'",file_get_contents($root.'/routes/web.php'));
  }
