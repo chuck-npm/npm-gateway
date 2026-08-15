@@ -95,6 +95,8 @@ return [
     '/admin/call-logs/upload' => ['names'=>['GET'=>'admin.call-logs.upload','POST'=>'admin.call-logs.store'],'methods'=>['GET','POST'],'controller'=>'call-logs','middleware'=>['authentication','protected-principal']],
     '/admin/call-log-reports' => ['name'=>'admin.call-log-reports.index','methods'=>['GET'],'controller'=>'call-log-reports','middleware'=>['authentication','protected-principal']],
     '/admin/call-log-reports/facebook-performance' => ['name'=>'admin.call-log-reports.facebook-performance','methods'=>['GET'],'controller'=>'call-log-reports','middleware'=>['authentication','protected-principal']],
+    '/admin/apartments' => ['name'=>'admin.apartments.index','methods'=>['GET'],'controller'=>'apartments','middleware'=>['authentication','protected-principal']],
+    '/admin/apartments/upload' => ['names'=>['GET'=>'admin.apartments.upload','POST'=>'admin.apartments.store'],'methods'=>['GET','POST'],'controller'=>'apartments','middleware'=>['authentication','protected-principal']],
     '/corporate/admin/property-access' => ['names'=>['GET'=>'admin.property-access.index','POST'=>'admin.property-access.update'],'methods'=>['GET','POST'],'controller'=>'admin','middleware'=>['authentication','admin-access']],
     '/employees' => ['name' => 'employees.index', 'methods' => ['GET'], 'controller' => 'employee-workspace', 'middleware' => ['authentication']],
     '/properties' => ['name'=>'properties.index','methods'=>['GET'],'controller'=>'property-workspace','middleware'=>['authentication']],

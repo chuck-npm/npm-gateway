@@ -95,6 +95,7 @@ final class SchemaVerifier
         if(isset($executed[ApplicationReviewsSchema::MIGRATION])){$this->verifyApplicationReviewsSchema();}
         if(isset($executed[CallLogsSchema::MIGRATION])){$this->verifyCallLogsSchema();}
         if(isset($executed[CallLogDestinationsSchema::MIGRATION])){$this->verifyCompleteCallLogDestinations();}
+        if(isset($executed[ApartmentsComSchema::MIGRATION])){$this->verifyApartmentsComSchema();}
 
         return [
             'Schema verification passed.',
@@ -114,6 +115,15 @@ final class SchemaVerifier
     private function verifyCompleteCallLogDestinations():void
     {
         $rows=$this->connection->query("SELECT d.called_tn,COALESCE(p.display_name,d.external_display_name) destination,d.property_id,d.external_display_name,d.active FROM call_log_destinations d LEFT JOIN properties p ON p.id=d.property_id")->fetch_all(MYSQLI_ASSOC);$byTn=[];foreach($rows as$row)$byTn[(string)$row['called_tn']]=$row;foreach(CallLogDestinationsSchema::MAPPINGS as$tn=>$name){$row=$byTn[$tn]??null;if($row===null||(string)$row['destination']!==$name||(int)$row['active']!==1)throw new MigrationException("Call Log destination {$tn} is missing or invalid.");if($name==='Suburban'){if($row['property_id']!==null||(string)$row['external_display_name']!=='Suburban')throw new MigrationException('Suburban must remain an external Call Log destination.');}elseif($row['property_id']===null||$row['external_display_name']!==null)throw new MigrationException("Call Log destination {$tn} must resolve through properties.");}
+    }
+
+    private function verifyApartmentsComSchema():void
+    {
+        foreach(ApartmentsComSchema::TABLES as$table){$meta=$this->tableMetadata($table);if(strcasecmp($meta['engine'],'InnoDB')!==0||strcasecmp($meta['collation'],'utf8mb4_0900_ai_ci')!==0)throw new MigrationException("{$table} has an invalid engine or collation.");}
+        $imports=$this->tableMetadata('apartments_imports');foreach(['uq_apartments_imports_public_id','uq_apartments_imports_file_sha256','idx_apartments_imports_imported']as$index)if(!isset($imports['indexes'][$index]))throw new MigrationException("Missing index {$index} on apartments_imports.");
+        $mappings=$this->tableMetadata('apartments_property_mappings');foreach(['uq_apartments_mappings_source_name','idx_apartments_mappings_property']as$index)if(!isset($mappings['indexes'][$index]))throw new MigrationException("Missing index {$index} on apartments_property_mappings.");
+        foreach(['apartments_calls'=>['idx_apartments_calls_property_occurred','idx_apartments_calls_occurred','idx_apartments_calls_import'],'apartments_email_leads'=>['idx_apartments_email_leads_property_occurred','idx_apartments_email_leads_occurred','idx_apartments_email_leads_import']]as$table=>$indexes){$meta=$this->tableMetadata($table);foreach($indexes as$index)if(!isset($meta['indexes'][$index]))throw new MigrationException("Missing index {$index} on {$table}.");foreach($meta['foreign_keys']as$key=>$rule)if($rule!=='RESTRICT')throw new MigrationException("Invalid foreign key {$key} on {$table}.");}
+        $rows=$this->connection->query("SELECT m.source_property_name,p.property_code,m.active FROM apartments_property_mappings m JOIN properties p ON p.id=m.property_id")->fetch_all(MYSQLI_ASSOC);$actual=[];foreach($rows as$row)if((int)$row['active']===1)$actual[(string)$row['source_property_name']]=(string)$row['property_code'];$expected=ApartmentsComSchema::MAPPINGS;ksort($actual);ksort($expected);if($actual!==$expected)throw new MigrationException('Apartments.com property mappings do not match the certified source configuration.');
     }
 
     private function verifyPropertiesWorkspaceSchema(): void
