@@ -8,8 +8,8 @@ final class PropertyDirectoryCriteriaFactory
     {
         $search=trim($this->scalarString($query['search']??'', ''));
         $search=substr(preg_replace('/[\x00-\x1F\x7F]/u','',$search)??'',0,100);
-        $requestedSort=$this->scalarString($query['sort']??'prop_id','prop_id');
-        $sort=in_array($requestedSort,['prop_id','name','address','phone','ivr','manager'],true)?$requestedSort:'prop_id';
+        $requestedSort=$this->scalarString($query['sort']??'name','name');
+        $sort=in_array($requestedSort,['prop_id','name','address','phone','ivr','manager'],true)?$requestedSort:'name';
         $requestedDirection=strtolower($this->scalarString($query['direction']??'asc','asc'));
         $direction=in_array($requestedDirection,['asc','desc'],true)?$requestedDirection:'asc';
         $requestedPage=$this->scalarString($query['page']??'1','1');$validatedPage=filter_var($requestedPage,FILTER_VALIDATE_INT);

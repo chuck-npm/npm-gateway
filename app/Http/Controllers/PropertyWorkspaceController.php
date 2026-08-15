@@ -25,6 +25,14 @@ final class PropertyWorkspaceController
     {
         if(!$this->allowed($context))return new Response(403,'Forbidden');if(!$this->csrf->valid($request->post['_token']??null))return new Response(419,'Invalid request.');try{$this->administration->create($request->post,$context->user);$this->flash->put('success','Property added successfully.');}catch(InvalidPropertyDataException $e){$this->flash->put('property_errors',$e->errors);$this->flash->put('property_input',$e->input);return Response::redirect('/human-resources/properties/create');}return Response::redirect('/human-resources/properties');
     }
+    public function edit(string$publicId,AuthenticatedRequestContext$context):Response
+    {
+        if(!$this->allowed($context))return new Response(403,'Forbidden');$property=$this->administration->find($publicId);if($property===null)return new Response(404,'Not Found');$user=$context->user;$logoutCsrfToken=$this->csrf->token();$csrfToken=$this->csrf->token();$errors=(array)$this->flash->pull('property_edit_errors',[]);$flashed=$this->flash->pull('property_edit_input',null);$input=is_array($flashed)?$flashed:$property;$navbarCorporateItems=$this->corporateTools->tools($context);ob_start();require$this->views.'/human-resources/properties/edit.php';return new Response(200,(string)ob_get_clean(),['Cache-Control'=>'private, no-store']);
+    }
+    public function update(Request$request,string$publicId,AuthenticatedRequestContext$context):Response
+    {
+        if(!$this->allowed($context))return new Response(403,'Forbidden');if(!$this->csrf->valid($request->post['_token']??null))return new Response(419,'Invalid request.');try{if(!$this->administration->update($publicId,$request->post,$context->user))return new Response(404,'Not Found');$this->flash->put('success','Property updated successfully.');return Response::redirect('/human-resources/properties');}catch(InvalidPropertyDataException$e){$this->flash->put('property_edit_errors',$e->errors);$this->flash->put('property_edit_input',$e->input);return Response::redirect('/human-resources/properties/'.$publicId.'/edit');}
+    }
     private function renderDirectory(Request $request,AuthenticatedRequestContext $context,bool $hr):Response
     {
         $user=$context->user;$logoutCsrfToken=$this->csrf->token();$directoryPage=$this->directory->search($this->criteria->fromQuery($request->query));$success=$hr?(string)$this->flash->pull('success',''):'';$navbarCorporateItems=$this->corporateTools->tools($context);ob_start();require $this->views.'/properties/index.php';return new Response(200,(string)ob_get_clean());

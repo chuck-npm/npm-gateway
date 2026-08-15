@@ -74,7 +74,7 @@ final class SchemaVerifier
         );
         $authenticationSecurityApplied = isset($executed[AuthenticationSecuritySchema::MIGRATION]);
         if (isset($executed[FoundationSchema::MIGRATION])) {
-            $this->verifyFoundationSchema($authenticationSecurityApplied,isset($executed[EmployeeAdministrationSchema::MIGRATION]));
+            $this->verifyFoundationSchema($authenticationSecurityApplied,isset($executed[EmployeeAdministrationSchema::MIGRATION]),isset($executed[SharedPropertyContactsSchema::MIGRATION]));
         }
         if ($authenticationSecurityApplied) {
             $this->verifyAuthenticationSecuritySchema();
@@ -198,7 +198,7 @@ final class SchemaVerifier
     }
     private function assertCheckValues(string $table,string $constraint,array $expected):void{$statement=$this->connection->prepare("SELECT cc.CHECK_CLAUSE FROM information_schema.TABLE_CONSTRAINTS tc JOIN information_schema.CHECK_CONSTRAINTS cc ON cc.CONSTRAINT_SCHEMA=tc.CONSTRAINT_SCHEMA AND cc.CONSTRAINT_NAME=tc.CONSTRAINT_NAME WHERE tc.CONSTRAINT_SCHEMA=? AND tc.TABLE_NAME=? AND tc.CONSTRAINT_NAME=? AND tc.CONSTRAINT_TYPE='CHECK'");$database=$this->expectedDatabase;$statement->bind_param('sss',$database,$table,$constraint);$statement->execute();$clause=$statement->get_result()->fetch_row()[0]??null;$statement->close();if(!is_string($clause))throw new MigrationException("Missing check constraint {$constraint}.");preg_match_all("/'([^']+)'/",str_replace("\\'","'",$clause),$matches);if(array_values(array_unique($matches[1]??[]))!==$expected)throw new MigrationException("Invalid permitted values for {$constraint}.");}
 
-    private function verifyFoundationSchema(bool $authenticationSecurityApplied,bool $employeeAdministrationApplied): void
+    private function verifyFoundationSchema(bool $authenticationSecurityApplied,bool $employeeAdministrationApplied,bool $sharedPropertyContactsApplied): void
     {
         foreach (FoundationSchema::expectations() as $table => $expected) {
             $metadata = $this->tableMetadata($table);
@@ -210,9 +210,13 @@ final class SchemaVerifier
             }
             foreach ($expected['indexes'] as $index) {
                 if($employeeAdministrationApplied&&$table==='employees'&&$index==='idx_employees_hire_date')continue;
+                if($sharedPropertyContactsApplied&&$table==='properties'&&in_array($index,['uq_properties_manager_email','uq_properties_ivr_number'],true))continue;
                 if (!isset($metadata['indexes'][$index])) {
                     throw new MigrationException("Missing index {$index} on {$table}.");
                 }
+            }
+            if($sharedPropertyContactsApplied&&$table==='properties'){
+                foreach(['manager_email','ivr_number']as$contact)if(isset($metadata['indexes']['uq_properties_'.$contact])||!isset($metadata['indexes']['idx_properties_'.$contact]))throw new MigrationException("Properties {$contact} indexing does not permit shared contact values.");
             }
             foreach ($expected['foreign_keys'] as $foreignKey) {
                 if (!isset($metadata['foreign_keys'][$foreignKey])) {
