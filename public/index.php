@@ -84,7 +84,8 @@ use NpmGateway\Services\SupplyOrderService;
 use NpmGateway\Http\Controllers\MarketingFlyerController;
 use NpmGateway\Services\MarketingFlyerService;
 use NpmGateway\Http\Controllers\CallLogController;
-use NpmGateway\Services\{CallLogAccessPolicy,CallLogService};
+use NpmGateway\Http\Controllers\CallLogReportController;
+use NpmGateway\Services\{CallLogAccessPolicy,CallLogService,CallLogReportService};
 
 $application=require dirname(__DIR__).'/bootstrap/app.php';$root=$application['root'];$environment=(string)$application['config']['app']['environment'];
 $path=parse_url((string)($_SERVER['REQUEST_URI']??'/'),PHP_URL_PATH);$path=is_string($path)?rtrim($path,'/'):'/';$path=$path===''?'/':$path;
@@ -125,7 +126,8 @@ $operationsRmAuditPdf=new OperationsRmAuditPdfController($container->get(Corpora
 $supplyOrders=new SupplyOrderController($container->get(CommunityActionContextResolver::class),$container->get(SupplyOrderService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
 $marketingFlyers=new MarketingFlyerController($container->get(CorporateAccessService::class),$container->get(MarketingFlyerService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$views);
 $callLogs=new CallLogController($container->get(CallLogAccessPolicy::class),$container->get(CallLogService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,new FlashSession($_SESSION),$container->get(PhoneFormatter::class),$views);
-$kernel=new WebKernel($authentication,new DashboardController($csrf,$container->get(DashboardHomeService::class),$views,$container->get(NotificationQueryService::class)),new RequireAuthenticationMiddleware($container->get(SessionService::class),$cookie,$loginReturns),$employees,$properties,$hr,$hrEmployees,$admin,$notificationController,$companyNoticeController,new StorageController($container->get(PublishedStorageService::class)),$corporate,$emergencyContact,$hrEmergencyContacts,$managerMaintenanceEmergencyContact,$communityActions,$applicationReviews,$corporateApplicationReviews,$creditCardPurchases,$corporateCreditCardPurchases,$rmCorrections,$corporateRmCorrections,$operationsOverview,$rmAudits,$corporateRmAudits,$operationsRmAuditPdf,$supplyOrders,$marketingFlyers,$callLogs);
+$callLogReports=new CallLogReportController($container->get(CallLogAccessPolicy::class),$container->get(CallLogReportService::class),$container->get(CorporateToolsProviderInterface::class),$csrf,$views);
+$kernel=new WebKernel($authentication,new DashboardController($csrf,$container->get(DashboardHomeService::class),$views,$container->get(NotificationQueryService::class)),new RequireAuthenticationMiddleware($container->get(SessionService::class),$cookie,$loginReturns),$employees,$properties,$hr,$hrEmployees,$admin,$notificationController,$companyNoticeController,new StorageController($container->get(PublishedStorageService::class)),$corporate,$emergencyContact,$hrEmergencyContacts,$managerMaintenanceEmergencyContact,$communityActions,$applicationReviews,$corporateApplicationReviews,$creditCardPurchases,$corporateCreditCardPurchases,$rmCorrections,$corporateRmCorrections,$operationsOverview,$rmAudits,$corporateRmAudits,$operationsRmAuditPdf,$supplyOrders,$marketingFlyers,$callLogs,$callLogReports);
 $request=new Request(strtoupper((string)($_SERVER['REQUEST_METHOD']??'GET')),$path,$_POST,array_map('strval',$_COOKIE),array_map('strval',$_SERVER),array_map('strval',$_GET),$_FILES);
 $response=$kernel->handle($request,$container->get(ClockInterface::class)->now());http_response_code($response->status);
 foreach($response->headers as $name=>$value)header($name.': '.$value);
