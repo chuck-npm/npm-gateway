@@ -93,12 +93,27 @@ final class SchemaVerifier
         if(isset($executed[EmployeeEmergencyContactSchema::MIGRATION])){$this->verifyEmployeeEmergencyContactSchema();}
         if(isset($executed[PropertyAccessSchema::MIGRATION])){$this->verifyPropertyAccessSchema();}
         if(isset($executed[ApplicationReviewsSchema::MIGRATION])){$this->verifyApplicationReviewsSchema();}
+        if(isset($executed[CallLogsSchema::MIGRATION])){$this->verifyCallLogsSchema();}
+        if(isset($executed[CallLogDestinationsSchema::MIGRATION])){$this->verifyCompleteCallLogDestinations();}
 
         return [
             'Schema verification passed.',
             sprintf('Executed migrations: %d', count($records)),
             sprintf('Pending migrations: %d', $pending),
         ];
+    }
+
+    private function verifyCallLogsSchema():void
+    {
+        foreach(CallLogsSchema::TABLES as $table)$this->tableMetadata($table);
+        $destinations=$this->tableMetadata('call_log_destinations');foreach(['uq_call_log_destinations_public_id','uq_call_log_destinations_called_tn','idx_call_log_destinations_property']as$index)if(!isset($destinations['indexes'][$index]))throw new MigrationException("Missing index {$index} on call_log_destinations.");foreach(['chk_call_log_destinations_identity','chk_call_log_destinations_tn']as$check)if(!isset($destinations['checks'][$check]))throw new MigrationException("Missing check {$check} on call_log_destinations.");
+        $imports=$this->tableMetadata('call_log_imports');foreach(['uq_call_log_imports_public_id','uq_call_log_imports_file_sha256']as$index)if(!isset($imports['indexes'][$index]))throw new MigrationException("Missing index {$index} on call_log_imports.");
+        $logs=$this->tableMetadata('call_logs');foreach(['idx_call_logs_started','idx_call_logs_destination_started','idx_call_logs_called_started','idx_call_logs_import']as$index)if(!isset($logs['indexes'][$index]))throw new MigrationException("Missing index {$index} on call_logs.");foreach(['chk_call_logs_times','chk_call_logs_calling_tn','chk_call_logs_called_tn']as$check)if(!isset($logs['checks'][$check]))throw new MigrationException("Missing check {$check} on call_logs.");
+    }
+
+    private function verifyCompleteCallLogDestinations():void
+    {
+        $rows=$this->connection->query("SELECT d.called_tn,COALESCE(p.display_name,d.external_display_name) destination,d.property_id,d.external_display_name,d.active FROM call_log_destinations d LEFT JOIN properties p ON p.id=d.property_id")->fetch_all(MYSQLI_ASSOC);$byTn=[];foreach($rows as$row)$byTn[(string)$row['called_tn']]=$row;foreach(CallLogDestinationsSchema::MAPPINGS as$tn=>$name){$row=$byTn[$tn]??null;if($row===null||(string)$row['destination']!==$name||(int)$row['active']!==1)throw new MigrationException("Call Log destination {$tn} is missing or invalid.");if($name==='Suburban'){if($row['property_id']!==null||(string)$row['external_display_name']!=='Suburban')throw new MigrationException('Suburban must remain an external Call Log destination.');}elseif($row['property_id']===null||$row['external_display_name']!==null)throw new MigrationException("Call Log destination {$tn} must resolve through properties.");}
     }
 
     private function verifyPropertiesWorkspaceSchema(): void

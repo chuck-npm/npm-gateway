@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build:vendor": "node scripts/copy-quill-assets.mjs",
-    "test": "node tests/JavaScript/marketing-flyer-upload.test.mjs"
+    "test": "node tests/JavaScript/marketing-flyer-upload.test.mjs && node tests/JavaScript/call-log-upload.test.mjs"
   },
   "devDependencies": {
     "quill": "2.0.3"
