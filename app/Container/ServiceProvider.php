@@ -167,7 +167,7 @@ use NpmGateway\Repositories\ApartmentsRepository;
 use NpmGateway\Repositories\CallLogReportRepository;
 use NpmGateway\Services\{MarketingFlyerService,MarketingFlyerImageProcessor,MarketingFlyerMonthOptions};
 use NpmGateway\Services\{CallLogAccessPolicy,CallLogWorkbookParser,CallLogService,CallLogFilterCriteriaFactory};
-use NpmGateway\Services\{ApartmentsService,ApartmentsWorkbookParser};
+use NpmGateway\Services\{ApartmentsService,ApartmentsWorkbookParser,ApartmentsReportCriteriaFactory};
 use NpmGateway\Services\{CallLogReportDateRangeFactory,CallLogReportService};
 use NpmGateway\Services\{MarketingFlyerNotificationWorker,MarketingFlyerNotificationHealthService};
 use NpmGateway\Contracts\MarketingFlyerNotifierInterface;
@@ -339,7 +339,8 @@ final class ServiceProvider
         $container->set(CallLogRepository::class,static fn(Container$c):CallLogRepository=>new CallLogRepository($c->get(mysqli::class)));
         $container->set(ApartmentsRepository::class,static fn(Container$c):ApartmentsRepository=>new ApartmentsRepository($c->get(mysqli::class)));
         $container->set(ApartmentsWorkbookParser::class,static fn(Container$c):ApartmentsWorkbookParser=>new ApartmentsWorkbookParser($c->get(PhoneFormatter::class)));
-        $container->set(ApartmentsService::class,static fn(Container$c):ApartmentsService=>new ApartmentsService($c->get(ApartmentsWorkbookParser::class),$c->get(ApartmentsRepository::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class)));
+        $container->set(ApartmentsReportCriteriaFactory::class,static fn():ApartmentsReportCriteriaFactory=>new ApartmentsReportCriteriaFactory());
+        $container->set(ApartmentsService::class,static fn(Container$c):ApartmentsService=>new ApartmentsService($c->get(ApartmentsWorkbookParser::class),$c->get(ApartmentsRepository::class),$c->get(InitializationTransactionInterface::class),$c->get(PublicIdGenerator::class),$c->get(ClockInterface::class),$c->get(AuditService::class),$c->get(ApartmentsReportCriteriaFactory::class)));
         $container->set(CallLogAccessPolicy::class,static fn(Container$c):CallLogAccessPolicy=>new CallLogAccessPolicy($c->get(ProtectedPrincipalConfig::class)));
         $container->set(CallLogWorkbookParser::class,static fn(Container$c):CallLogWorkbookParser=>new CallLogWorkbookParser($c->get(PhoneFormatter::class)));
         $container->set(CallLogFilterCriteriaFactory::class,static fn():CallLogFilterCriteriaFactory=>new CallLogFilterCriteriaFactory());
