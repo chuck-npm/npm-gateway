@@ -1,0 +1,9 @@
+<?php
+declare(strict_types=1);
+namespace NpmGateway\Services;
+use NpmGateway\ValueObjects\ZillowReportCriteria;
+final readonly class ZillowReportCriteriaFactory
+{
+ public function fromQuery(array$query,array$properties,?array$range):ZillowReportCriteria{$type=$this->scalar($query['type']??'all');if(!in_array($type,['all','phone','email'],true))$type='all';$requested=array_key_exists('from',$query)||array_key_exists('to',$query);$from=$this->scalar($query['from']??'');$to=$this->scalar($query['to']??'');if(!$requested&&$range!==null){$from=substr((string)$range['source_started_at'],0,10);$to=substr((string)$range['source_ended_at'],0,10);}$property=$this->scalar($query['property']??'');$errors=[];if($from!==''&&!$this->date($from))$errors['from']='Enter a valid From Date.';if($to!==''&&!$this->date($to))$errors['to']='Enter a valid To Date.';if(!isset($errors['from'],$errors['to'])&&$from!==''&&$to!==''&&$from>$to)$errors['date_range']='From Date must be on or before To Date.';if($property!==''&&!in_array($property,array_column($properties,'public_id'),true))$errors['property']='Choose a Zillow.com property.';$page=filter_var($this->scalar($query['page']??'1'),FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);$per=filter_var($this->scalar($query['per_page']??'100'),FILTER_VALIDATE_INT);if(!in_array($per,[50,100,250],true))$per=100;$exclusive=$to!==''&&!isset($errors['to'])?(new \DateTimeImmutable($to))->modify('+1 day')->format('Y-m-d'):'';return new ZillowReportCriteria($type,$from,$to,$exclusive,$property,$page===false?1:$page,$per,$errors);}
+ private function scalar(mixed$v):string{return is_scalar($v)?trim((string)$v):'';}private function date(string$v):bool{$d=\DateTimeImmutable::createFromFormat('!Y-m-d',$v);$e=\DateTimeImmutable::getLastErrors();return$d!==false&&$d->format('Y-m-d')===$v&&($e===false||($e['warning_count']===0&&$e['error_count']===0));}
+}

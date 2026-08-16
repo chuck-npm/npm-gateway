@@ -96,6 +96,7 @@ final class SchemaVerifier
         if(isset($executed[CallLogsSchema::MIGRATION])){$this->verifyCallLogsSchema();}
         if(isset($executed[CallLogDestinationsSchema::MIGRATION])){$this->verifyCompleteCallLogDestinations();}
         if(isset($executed[ApartmentsComSchema::MIGRATION])){$this->verifyApartmentsComSchema();}
+        if(isset($executed[ZillowComSchema::MIGRATION])){$this->verifyZillowComSchema();}
 
         return [
             'Schema verification passed.',
@@ -124,6 +125,11 @@ final class SchemaVerifier
         $mappings=$this->tableMetadata('apartments_property_mappings');foreach(['uq_apartments_mappings_source_name','idx_apartments_mappings_property']as$index)if(!isset($mappings['indexes'][$index]))throw new MigrationException("Missing index {$index} on apartments_property_mappings.");
         foreach(['apartments_calls'=>['idx_apartments_calls_property_occurred','idx_apartments_calls_occurred','idx_apartments_calls_import'],'apartments_email_leads'=>['idx_apartments_email_leads_property_occurred','idx_apartments_email_leads_occurred','idx_apartments_email_leads_import']]as$table=>$indexes){$meta=$this->tableMetadata($table);foreach($indexes as$index)if(!isset($meta['indexes'][$index]))throw new MigrationException("Missing index {$index} on {$table}.");foreach($meta['foreign_keys']as$key=>$rule)if($rule!=='RESTRICT')throw new MigrationException("Invalid foreign key {$key} on {$table}.");}
         $rows=$this->connection->query("SELECT m.source_property_name,p.property_code,m.active FROM apartments_property_mappings m JOIN properties p ON p.id=m.property_id")->fetch_all(MYSQLI_ASSOC);$actual=[];foreach($rows as$row)if((int)$row['active']===1)$actual[(string)$row['source_property_name']]=(string)$row['property_code'];$expected=ApartmentsComSchema::MAPPINGS;ksort($actual);ksort($expected);if($actual!==$expected)throw new MigrationException('Apartments.com property mappings do not match the certified source configuration.');
+    }
+    private function verifyZillowComSchema():void
+    {
+        foreach(ZillowComSchema::TABLES as$table){$meta=$this->tableMetadata($table);if(strcasecmp($meta['engine'],'InnoDB')!==0||strcasecmp($meta['collation'],'utf8mb4_0900_ai_ci')!==0)throw new MigrationException("{$table} has an invalid engine or collation.");foreach($meta['foreign_keys']as$key=>$rule)if($rule!=='RESTRICT')throw new MigrationException("Invalid foreign key {$key} on {$table}.");}
+        $imports=$this->tableMetadata('zillow_imports');foreach(['uq_zillow_imports_public_id','uq_zillow_imports_file_sha256','idx_zillow_imports_imported']as$index)if(!isset($imports['indexes'][$index]))throw new MigrationException("Missing index {$index} on zillow_imports.");$leads=$this->tableMetadata('zillow_leads');foreach(['idx_zillow_leads_property_occurred','idx_zillow_leads_occurred','idx_zillow_leads_type_occurred','idx_zillow_leads_import']as$index)if(!isset($leads['indexes'][$index]))throw new MigrationException("Missing index {$index} on zillow_leads.");$rows=$this->connection->query('SELECT m.source_listing_name,p.property_code,m.active FROM zillow_property_mappings m JOIN properties p ON p.id=m.property_id')->fetch_all(MYSQLI_ASSOC);$actual=[];foreach($rows as$row)if((int)$row['active']===1)$actual[(string)$row['source_listing_name']]=(string)$row['property_code'];$expected=ZillowComSchema::MAPPINGS;ksort($actual);ksort($expected);if($actual!==$expected)throw new MigrationException('Zillow.com property mappings do not match the certified source configuration.');
     }
 
     private function verifyPropertiesWorkspaceSchema(): void
